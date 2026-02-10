@@ -1,0 +1,14 @@
+{
+  "name": "@zipper/client",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "cd apps/webview && npm run dev",
+    "build": "cd apps/webview && npm run build",
+    "start": "cd apps/webview && npm run start"
+  }
+}

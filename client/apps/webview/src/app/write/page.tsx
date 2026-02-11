@@ -6,13 +6,14 @@
 
 'use client'
 
-// 동적 렌더링 강제 (useSearchParams 사용으로 인해)
+// 동적 렌더링 강제
 export const dynamic = 'force-dynamic'
+export const runtime = 'edge' // 또는 제거
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card, CardContent, Button } from '@ui/index'
 import { CommunityTag, TAG_LABELS, TAG_ICONS } from '@zipper/models/src/community'
-import { cn } from '@/lib/utils'
 
 const writeOptions = [
   { tag: CommunityTag.TOGATHER, description: '공구·음식·배달 함께해요' },
@@ -23,7 +24,20 @@ const writeOptions = [
 ]
 
 export default function WritePage() {
+  const router = useRouter()
+  // useSearchParams 대신 window.location 사용 (클라이언트에서만)
   const [selectedType, setSelectedType] = useState<CommunityTag | null>(null)
+
+  useEffect(() => {
+    // 클라이언트에서만 URL 파라미터 읽기
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      const tagParam = params.get('tag')
+      if (tagParam) {
+        setSelectedType(tagParam as CommunityTag)
+      }
+    }
+  }, [])
 
   if (!selectedType) {
     return (
@@ -32,7 +46,12 @@ export default function WritePage() {
         <header className="bg-surface border-b border-border">
           <div className="px-4 py-3 flex items-center justify-between">
             <h1 className="text-xl font-bold text-text-primary">글쓰기</h1>
-            <button className="text-text-secondary">✕</button>
+            <button
+              onClick={() => router.back()}
+              className="text-text-secondary"
+            >
+              ✕
+            </button>
           </div>
         </header>
 
@@ -43,27 +62,32 @@ export default function WritePage() {
           </p>
 
           <div className="space-y-3">
-            {writeOptions.map((option) => (
-              <Card
-                key={option.tag}
-                onClick={() => setSelectedType(option.tag)}
-                className="cursor-pointer hover:border-primary transition-colors"
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl">{TAG_ICONS[option.tag]}</span>
-                    <div>
-                      <h3 className="font-semibold text-text-primary">
-                        {TAG_LABELS[option.tag]}
-                      </h3>
-                      <p className="text-sm text-text-secondary">
-                        {option.description}
-                      </p>
+            {writeOptions.map((option) => {
+              const IconComponent = TAG_ICONS[option.tag]
+              return (
+                <Card
+                  key={option.tag}
+                  onClick={() => setSelectedType(option.tag)}
+                  className="cursor-pointer hover:border-primary transition-colors"
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      {IconComponent && (
+                        <IconComponent className="w-6 h-6 text-primary" strokeWidth={1.5} />
+                      )}
+                      <div>
+                        <h3 className="font-semibold text-text-primary">
+                          {TAG_LABELS[option.tag]}
+                        </h3>
+                        <p className="text-sm text-text-secondary">
+                          {option.description}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </CardContent>
+                </Card>
+              )
+            })}
           </div>
         </main>
       </div>
@@ -83,7 +107,7 @@ export default function WritePage() {
               ← 뒤로
             </button>
             <h1 className="text-lg font-bold text-text-primary">
-              {TAG_ICONS[selectedType]} {TAG_LABELS[selectedType]}
+              {TAG_LABELS[selectedType]}
             </h1>
             <Button size="sm">완료</Button>
           </div>
@@ -179,7 +203,7 @@ export default function WritePage() {
             ← 뒤로
           </button>
           <h1 className="text-lg font-bold text-text-primary">
-            {TAG_ICONS[selectedType]} {TAG_LABELS[selectedType]}
+            {TAG_LABELS[selectedType]}
           </h1>
           <Button size="sm">완료</Button>
         </div>

@@ -38,21 +38,18 @@ ENV NODE_ENV production
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Next.js 빌드 결과물 복사
-COPY --from=builder /app/apps/webview/public ./public
-
-# standalone 모드가 활성화되어 있으면 사용, 아니면 일반 빌드 사용
-COPY --from=builder --chown=nextjs:nodejs /app/apps/webview/.next ./.next
-COPY --from=builder /app/apps/webview/package*.json ./
-COPY --from=builder /app/node_modules ./node_modules
+# standalone 모드 사용 (next.config.js에서 output: 'standalone' 설정 시)
+# .next/standalone 디렉토리에 모든 필요한 파일이 포함됨
+COPY --from=builder --chown=nextjs:nodejs /app/apps/webview/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/apps/webview/.next/static ./apps/webview/.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/apps/webview/public ./apps/webview/public
 
 USER nextjs
 
 # Render는 PORT 환경 변수를 자동으로 설정합니다
 EXPOSE 10000
 
-# PORT 환경 변수 사용 (Render가 자동으로 설정)
 ENV PORT 10000
 
-# PORT 환경 변수를 사용하도록 수정
-CMD ["sh", "-c", "node ../../node_modules/.bin/next start -p ${PORT:-10000}"]
+# standalone 모드에서는 server.js를 실행
+CMD ["node", "apps/webview/server.js"]

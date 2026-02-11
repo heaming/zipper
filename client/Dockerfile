@@ -3,12 +3,12 @@ FROM node:18-alpine AS deps
 WORKDIR /app
 
 # monorepo 전체 구조 복사
-COPY package*.json ./
+COPY package.json package-lock.json* ./
 COPY apps/webview/package*.json ./apps/webview/
 COPY packages ./packages
 
-# 의존성 설치 (workspace 전체)
-RUN npm ci
+# 의존성 설치 (package-lock.json이 있으면 npm ci, 없으면 npm install)
+RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
 
 # Stage 2: Builder
 FROM node:18-alpine AS builder
@@ -48,8 +48,11 @@ COPY --from=builder /app/node_modules ./node_modules
 
 USER nextjs
 
-EXPOSE 3001
+# Render는 PORT 환경 변수를 자동으로 설정합니다
+EXPOSE 10000
 
-ENV PORT 3001
+# PORT 환경 변수 사용 (Render가 자동으로 설정)
+ENV PORT 10000
 
-CMD ["npm", "start"]
+# PORT 환경 변수를 사용하도록 수정
+CMD ["sh", "-c", "node ../../node_modules/.bin/next start -p ${PORT:-10000}"]

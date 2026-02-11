@@ -23,6 +23,11 @@ export class TypeOrmUserRepository implements UserRepository {
     return entity ? this.toDomain(entity) : null;
   }
 
+  async findByNickname(nickname: string): Promise<User | null> {
+    const entity = await this.repository.findOne({ where: { nickname } });
+    return entity ? this.toDomain(entity) : null;
+  }
+
   async save(user: User): Promise<User> {
     const entity = this.toEntity(user);
     const saved = await this.repository.save(entity);
@@ -39,6 +44,7 @@ export class TypeOrmUserRepository implements UserRepository {
       entity.id,
       entity.email,
       entity.password,
+      entity.nickname,
       entity.phoneNumber,
       entity.createdAt,
       entity.updatedAt,
@@ -51,6 +57,7 @@ export class TypeOrmUserRepository implements UserRepository {
     if (domain.id) entity.id = domain.id;
     entity.email = domain.email;
     entity.password = domain.password;
+    entity.nickname = domain.nickname;
     entity.phoneNumber = domain.phoneNumber;
     return entity;
   }

@@ -11,6 +11,15 @@ import { persist } from 'zustand/middleware'
 interface User {
   id: string
   email: string
+  nickname?: string
+  phoneNumber?: string
+  buildingId?: string
+  buildingName?: string
+  dong?: string
+  ho?: string
+  isBuildingVerified?: boolean
+  createdAt: string
+  updatedAt: string
 }
 
 interface AuthState {

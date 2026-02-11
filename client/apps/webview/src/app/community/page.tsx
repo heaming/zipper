@@ -4,10 +4,10 @@
 
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { User, MessageCircle, Home as HomeIcon } from 'lucide-react'
+import { User, MessageCircle, Home as HomeIcon, Pencil, X } from 'lucide-react'
 import { Card, CardContent, Badge, Divider } from '@ui/index'
 import { CommunityTag, TAG_LABELS, TAG_ICONS } from '@zipper/models/src/community'
 import { cn } from '@/lib/utils'
@@ -33,8 +33,25 @@ interface Post {
   createdAt: string
   author?: {
     id: number
-    email: string
+    nickname: string
   }
+}
+
+const writeOptions = [
+  { tag: CommunityTag.TOGATHER, description: '공구·음식·배달 함께해요' },
+  { tag: CommunityTag.SHARE, description: '무료로 나눠드려요' },
+  { tag: CommunityTag.LIFESTYLE, description: '우리 동네 궁금해요' },
+  { tag: CommunityTag.CHAT, description: '자유롭게 이야기해요' },
+  { tag: CommunityTag.MARKET, description: '상업 광고 (권한 필요)' },
+]
+
+const tagColors: Record<CommunityTag, string> = {
+  [CommunityTag.ALL]: '#4ccf89',
+  [CommunityTag.TOGATHER]: '#fd6174',
+  [CommunityTag.SHARE]: '#7ba8f0',
+  [CommunityTag.LIFESTYLE]: '#ff8e60',
+  [CommunityTag.CHAT]: '#4ccf89',
+  [CommunityTag.MARKET]: '#a88af8',
 }
 
 export default function CommunityPage() {
@@ -43,6 +60,11 @@ export default function CommunityPage() {
   const [activeTag, setActiveTag] = useState<CommunityTag>(CommunityTag.ALL)
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadingProfile, setLoadingProfile] = useState(true)
+  const [buildingId, setBuildingId] = useState<number | null>(null)
+  const [showWriteMenu, setShowWriteMenu] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+  const buttonRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -50,15 +72,69 @@ export default function CommunityPage() {
       return
     }
     
+    // 사용자 프로필에서 buildingId 가져오기
+    const loadProfile = async () => {
+      try {
+        setLoadingProfile(true)
+        const profile = await apiClient.getProfile()
+        if (profile.buildings && profile.buildings.length > 0) {
+          setBuildingId(profile.buildings[0].id)
+        } else if (profile.buildingId) {
+          setBuildingId(profile.buildingId)
+        } else {
+          // 건물 정보가 없으면 게시글을 불러오지 않음
+          setPosts([])
+          setLoading(false)
+        }
+      } catch (error) {
+        console.error('Failed to load profile:', error)
+        setBuildingId(null)
+        setPosts([])
+        setLoading(false)
+      } finally {
+        setLoadingProfile(false)
+      }
+    }
+    
+    loadProfile()
+  }, [isAuthenticated, router])
+
+  useEffect(() => {
+    if (!isAuthenticated || !buildingId || loadingProfile) return
+    
     fetchPosts()
-  }, [activeTag, isAuthenticated, router])
+  }, [activeTag, isAuthenticated, buildingId, loadingProfile, router])
+
+  // 외부 클릭 시 메뉴 닫기
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        showWriteMenu &&
+        menuRef.current &&
+        !menuRef.current.contains(event.target as Node) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(event.target as Node)
+      ) {
+        setShowWriteMenu(false)
+      }
+    }
+
+    if (showWriteMenu) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside)
+      }
+    }
+  }, [showWriteMenu])
 
   const fetchPosts = async () => {
+    if (!buildingId) return
+    
     try {
       setLoading(true)
       const boardType = activeTag === CommunityTag.ALL ? undefined : activeTag
-      const data = await apiClient.getPosts(boardType, 50)
-      setPosts(data)
+      const data = await apiClient.getPosts(buildingId, boardType, 50)
+      setPosts(data.posts || data)
     } catch (error) {
       console.error('Failed to fetch posts:', error)
     } finally {
@@ -159,7 +235,7 @@ export default function CommunityPage() {
 
       {/* Content */}
       <main className="flex-1 px-4 py-4">
-        {loading ? (
+        {loading || loadingProfile ? (
           <div className="text-center py-12 text-text-secondary">
             로딩 중...
           </div>
@@ -209,7 +285,7 @@ export default function CommunityPage() {
                       <div className="flex items-center gap-3">
                         <span className="flex items-center gap-1">
                           <User className="w-3.5 h-3.5" strokeWidth={1.5} />
-                          {post.author?.email.split('@')[0] || '익명'}
+                          {post.author?.nickname || '익명'}
                         </span>
                         <span>{getTimeAgo(post.createdAt)}</span>
                       </div>
@@ -231,6 +307,79 @@ export default function CommunityPage() {
           </div>
         )}
       </main>
+
+      {/* Floating Write Button & Menu */}
+      <div className="fixed bottom-20 right-4 z-30">
+        {/* Write Menu */}
+        {showWriteMenu && (
+          <div
+            ref={menuRef}
+            className="absolute bottom-16 right-0 w-64 bg-white rounded-lg shadow-xl border border-gray-200 overflow-hidden mb-2"
+          >
+            {writeOptions.map((option, index) => {
+              const Icon = TAG_ICONS[option.tag]
+              const color = tagColors[option.tag]
+              return (
+                <Link
+                  key={option.tag}
+                  href={`/write?tag=${option.tag}`}
+                  onClick={() => setShowWriteMenu(false)}
+                >
+                  <div
+                    className={cn(
+                      'flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors',
+                      index !== writeOptions.length - 1 && 'border-b border-gray-100'
+                    )}
+                  >
+                    {Icon && (
+                      <Icon
+                        className="w-5 h-5"
+                        strokeWidth={1.5}
+                        style={{ color }}
+                      />
+                    )}
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-text-primary text-sm">
+                        {TAG_LABELS[option.tag]}
+                      </h3>
+                      <p className="text-xs text-text-secondary mt-0.5">
+                        {option.description}
+                      </p>
+                    </div>
+                  </div>
+                </Link>
+              )
+            })}
+          </div>
+        )}
+
+        {/* Write Button / X Button */}
+        <button
+          ref={buttonRef}
+          onClick={() => setShowWriteMenu(!showWriteMenu)}
+          className={cn(
+            'w-14 h-14 rounded-full shadow-lg active:scale-95 transition-transform flex items-center justify-center',
+            showWriteMenu
+              ? 'bg-white shadow shadow-lg border border-1 border-neutral-700'
+              : 'text-white'
+          )}
+          style={
+            showWriteMenu
+              ? {
+                  backgroundImage: 'linear-gradient(to bottom, #ffffff, #f7f7f7, #efefef, #e8e7e7, #e0dfdf)',
+                }
+              : {
+                  backgroundImage: 'linear-gradient(to right top, #45b393, #44b892, #44be91, #45c38f, #47c88d, #54cc87, #61d081, #6ed37a, #85d56f, #9bd766, #b0d85d, #c5d856)',
+                }
+          }
+        >
+          {showWriteMenu ? (
+            <X className="w-6 h-6" strokeWidth={2} style={{ color: '#2E2E2E' }} />
+          ) : (
+            <Pencil className="w-6 h-6" strokeWidth={2} />
+          )}
+        </button>
+      </div>
     </div>
   )
 }

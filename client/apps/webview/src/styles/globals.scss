@@ -45,6 +45,15 @@
     @apply min-h-touch min-w-touch;
   }
   
+  /* 스크롤바 숨기기 */
+  .scrollbar-hide {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+    &::-webkit-scrollbar {
+      display: none;  /* Chrome, Safari, Opera */
+    }
+  }
+  
   /* 페이지 컨테이너 (PC에서는 중앙에 모바일 뷰처럼 표시) */
   .page-container {
     @apply max-w-screen-sm mx-auto min-h-screen;
@@ -97,7 +106,8 @@
     'togather': #fd6174,
     'share': #7ba8f0,
     'lifestyle': #ff8e60,
-    'chat': #ffd858,
+    'chat': #4ccf89,
+    //'chat': #ffd858,
     'market': #a88af8
   );
 

@@ -100,22 +100,41 @@ INSERT INTO buildings (
 -- 비밀번호는 모두 'password123'
 -- 같은 단지 내 다른 동에 사는 사람들도 같은 buildingId
 
-INSERT INTO users (email, password, "phoneNumber", "buildingId", dong, ho, "isBuildingVerified", "createdAt", "updatedAt") VALUES
+INSERT INTO users (email, password, nickname, "phoneNumber", "buildingId", dong, ho, "isBuildingVerified", "createdAt", "updatedAt") VALUES
 -- 래미안 강남 (buildingId=1) - 5명이 다른 동에 거주
-('hyemi@example.com', '$2b$10$7jV9SrKzWb57rlaeBbpD6uw2NgnVUYbQUz8tckH5istr.2kAOna3.', '010-1234-5678', 1, '101동', '1201호', true, NOW() - INTERVAL '30 days', NOW()),
-('minsu@example.com', '$2b$10$7jV9SrKzWb57rlaeBbpD6uw2NgnVUYbQUz8tckH5istr.2kAOna3.', '010-2345-6789', 1, '102동', '803호', true, NOW() - INTERVAL '25 days', NOW()),
-('jihyun@example.com', '$2b$10$7jV9SrKzWb57rlaeBbpD6uw2NgnVUYbQUz8tckH5istr.2kAOna3.', '010-3456-7890', 1, '101동', '1505호', true, NOW() - INTERVAL '20 days', NOW()),
-('dongwoo@example.com', '$2b$10$7jV9SrKzWb57rlaeBbpD6uw2NgnVUYbQUz8tckH5istr.2kAOna3.', '010-4567-8901', 1, '103동', '902호', true, NOW() - INTERVAL '15 days', NOW()),
-('sujin@example.com', '$2b$10$7jV9SrKzWb57rlaeBbpD6uw2NgnVUYbQUz8tckH5istr.2kAOna3.', '010-5678-9012', 1, '102동', '1104호', true, NOW() - INTERVAL '12 days', NOW()),
+('hyemi@example.com', '$2b$10$7jV9SrKzWb57rlaeBbpD6uw2NgnVUYbQUz8tckH5istr.2kAOna3.', '혜미', '010-1234-5678', 1, '101동', '1201호', true, NOW() - INTERVAL '30 days', NOW()),
+('minsu@example.com', '$2b$10$7jV9SrKzWb57rlaeBbpD6uw2NgnVUYbQUz8tckH5istr.2kAOna3.', '민수', '010-2345-6789', 1, '102동', '803호', true, NOW() - INTERVAL '25 days', NOW()),
+('jihyun@example.com', '$2b$10$7jV9SrKzWb57rlaeBbpD6uw2NgnVUYbQUz8tckH5istr.2kAOna3.', '지현', '010-3456-7890', 1, '101동', '1505호', true, NOW() - INTERVAL '20 days', NOW()),
+('dongwoo@example.com', '$2b$10$7jV9SrKzWb57rlaeBbpD6uw2NgnVUYbQUz8tckH5istr.2kAOna3.', '동우', '010-4567-8901', 1, '103동', '902호', true, NOW() - INTERVAL '15 days', NOW()),
+('sujin@example.com', '$2b$10$7jV9SrKzWb57rlaeBbpD6uw2NgnVUYbQUz8tckH5istr.2kAOna3.', '수진', '010-5678-9012', 1, '102동', '1104호', true, NOW() - INTERVAL '12 days', NOW()),
 
 -- 힐스테이트 역삼 (buildingId=2) - 3명이 다른 동에 거주
-('junho@example.com', '$2b$10$7jV9SrKzWb57rlaeBbpD6uw2NgnVUYbQUz8tckH5istr.2kAOna3.', '010-6789-0123', 2, 'A동', '701호', true, NOW() - INTERVAL '10 days', NOW()),
-('yuna@example.com', '$2b$10$7jV9SrKzWb57rlaeBbpD6uw2NgnVUYbQUz8tckH5istr.2kAOna3.', '010-7890-1234', 2, 'B동', '1203호', true, NOW() - INTERVAL '8 days', NOW()),
-('seungho@example.com', '$2b$10$7jV9SrKzWb57rlaeBbpD6uw2NgnVUYbQUz8tckH5istr.2kAOna3.', '010-8901-2345', 2, 'A동', '1502호', true, NOW() - INTERVAL '5 days', NOW()),
+('junho@example.com', '$2b$10$7jV9SrKzWb57rlaeBbpD6uw2NgnVUYbQUz8tckH5istr.2kAOna3.', '준호', '010-6789-0123', 2, 'A동', '701호', true, NOW() - INTERVAL '10 days', NOW()),
+('yuna@example.com', '$2b$10$7jV9SrKzWb57rlaeBbpD6uw2NgnVUYbQUz8tckH5istr.2kAOna3.', '유나', '010-7890-1234', 2, 'B동', '1203호', true, NOW() - INTERVAL '8 days', NOW()),
+('seungho@example.com', '$2b$10$7jV9SrKzWb57rlaeBbpD6uw2NgnVUYbQUz8tckH5istr.2kAOna3.', '승호', '010-8901-2345', 2, 'A동', '1502호', true, NOW() - INTERVAL '5 days', NOW()),
 
 -- 트리마제 오피스텔 (buildingId=3) - 동 구분 없음
-('jiwon@example.com', '$2b$10$7jV9SrKzWb57rlaeBbpD6uw2NgnVUYbQUz8tckH5istr.2kAOna3.', '010-9012-3456', 3, NULL, '805호', true, NOW() - INTERVAL '3 days', NOW()),
-('taehyung@example.com', '$2b$10$7jV9SrKzWb57rlaeBbpD6uw2NgnVUYbQUz8tckH5istr.2kAOna3.', '010-0123-4567', 3, NULL, '1207호', true, NOW() - INTERVAL '1 day', NOW());
+('jiwon@example.com', '$2b$10$7jV9SrKzWb57rlaeBbpD6uw2NgnVUYbQUz8tckH5istr.2kAOna3.', '지원', '010-9012-3456', 3, NULL, '805호', true, NOW() - INTERVAL '3 days', NOW()),
+('taehyung@example.com', '$2b$10$7jV9SrKzWb57rlaeBbpD6uw2NgnVUYbQUz8tckH5istr.2kAOna3.', '태형', '010-0123-4567', 3, NULL, '1207호', true, NOW() - INTERVAL '1 day', NOW());
+
+-- 2-1. 건물 멤버십 데이터 (users의 buildingId와 일치)
+-- 모든 사용자가 자신의 buildingId에 대한 멤버십을 가짐
+INSERT INTO building_memberships ("userId", "buildingId", status, "joinedAt", "createdAt", "updatedAt") VALUES
+-- 래미안 강남 (buildingId=1)
+(1, 1, 'ACTIVE', NOW() - INTERVAL '30 days', NOW() - INTERVAL '30 days', NOW()),
+(2, 1, 'ACTIVE', NOW() - INTERVAL '25 days', NOW() - INTERVAL '25 days', NOW()),
+(3, 1, 'ACTIVE', NOW() - INTERVAL '20 days', NOW() - INTERVAL '20 days', NOW()),
+(4, 1, 'ACTIVE', NOW() - INTERVAL '15 days', NOW() - INTERVAL '15 days', NOW()),
+(5, 1, 'ACTIVE', NOW() - INTERVAL '12 days', NOW() - INTERVAL '12 days', NOW()),
+
+-- 힐스테이트 역삼 (buildingId=2)
+(6, 2, 'ACTIVE', NOW() - INTERVAL '10 days', NOW() - INTERVAL '10 days', NOW()),
+(7, 2, 'ACTIVE', NOW() - INTERVAL '8 days', NOW() - INTERVAL '8 days', NOW()),
+(8, 2, 'ACTIVE', NOW() - INTERVAL '5 days', NOW() - INTERVAL '5 days', NOW()),
+
+-- 트리마제 오피스텔 (buildingId=3)
+(9, 3, 'ACTIVE', NOW() - INTERVAL '3 days', NOW() - INTERVAL '3 days', NOW()),
+(10, 3, 'ACTIVE', NOW() - INTERVAL '1 day', NOW() - INTERVAL '1 day', NOW());
 
 -- 3. 게시글 데이터 - 건물(단지)별로 작성됨
 -- ============================================
@@ -312,6 +331,8 @@ INSERT INTO likes ("userId", "targetType", "targetId", "createdAt") VALUES
 -- 실행 순서:
 -- 1. 데이터베이스 초기화 (선택사항)
 --    DROP TABLE IF EXISTS likes, comments, posts, users, buildings CASCADE;
+-- DROP SCHEMA public CASCADE;
+-- CREATE SCHEMA public;
 -- 
 -- 2. 백엔드 서버 시작 (자동으로 테이블 생성)
 --    cd backend && npm run start:dev

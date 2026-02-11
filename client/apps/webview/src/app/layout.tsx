@@ -16,6 +16,11 @@ function BottomNav() {
   if (hideNavPaths.includes(pathname)) {
     return null
   }
+  
+  // 게시글 상세 페이지에서는 네비게이션 숨김
+  if (pathname?.startsWith('/community/') && pathname !== '/community') {
+    return null
+  }
 
   const navItems = [
     { href: '/home', icon: Home, label: '홈' },

@@ -21,7 +21,7 @@ interface Post {
   createdAt: string
   author?: {
     id: number
-    email: string
+    nickname: string
   }
 }
 
@@ -34,6 +34,54 @@ export default function PreviewPage() {
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
 
+  // Mock data for preview page
+  const mockPosts: Post[] = [
+    {
+      id: 1,
+      title: '같이 배달 시키실 분 구해요!',
+      content: '치킨 배달 같이 시키실 분 구합니다. 2만원 이상 주문 시 배달비 무료예요.',
+      boardType: 'togather',
+      likeCount: 12,
+      commentCount: 5,
+      viewCount: 45,
+      createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+      author: { id: 1, nickname: '김동민' },
+    },
+    {
+      id: 2,
+      title: '책상 나눔합니다',
+      content: '이사 가면서 책상 나눔합니다. 깨끗하게 사용했어요.',
+      boardType: 'share',
+      likeCount: 8,
+      commentCount: 3,
+      viewCount: 32,
+      createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
+      author: { id: 2, nickname: '이영희' },
+    },
+    {
+      id: 3,
+      title: '우리 동네 맛집 추천해요',
+      content: '1층에 새로 생긴 카페 정말 좋아요. 분위기도 좋고 커피도 맛있어요.',
+      boardType: 'lifestyle',
+      likeCount: 15,
+      commentCount: 7,
+      viewCount: 67,
+      createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+      author: { id: 3, nickname: '박철수' },
+    },
+    {
+      id: 4,
+      title: '오늘 날씨 정말 좋네요',
+      content: '창문 열고 있으니 바람이 시원하게 들어와요. 다들 환기 잘 하세요!',
+      boardType: 'chat',
+      likeCount: 5,
+      commentCount: 2,
+      viewCount: 23,
+      createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
+      author: { id: 4, nickname: '최미영' },
+    },
+  ]
+
   useEffect(() => {
     // 로그인되어 있으면 홈으로 리다이렉트
     if (isAuthenticated) {
@@ -41,20 +89,33 @@ export default function PreviewPage() {
       return
     }
     
-    fetchPosts()
+    // 미리보기 페이지에서는 mockdata 사용 (인증 불필요)
+    loadMockPosts()
   }, [selectedTag, isAuthenticated, router])
 
-  const fetchPosts = async () => {
-    try {
-      setLoading(true)
-      const boardType = selectedTag === CommunityTag.ALL ? undefined : selectedTag
-      const data = await apiClient.getPosts(boardType, 20)
-      setPosts(data)
-    } catch (error) {
-      console.error('Failed to fetch posts:', error)
-    } finally {
-      setLoading(false)
+  const loadMockPosts = () => {
+    setLoading(true)
+    // 태그에 따라 필터링
+    let filteredPosts = mockPosts
+    if (selectedTag !== CommunityTag.ALL) {
+      const tagMap: Record<CommunityTag, string> = {
+        [CommunityTag.ALL]: 'all',
+        [CommunityTag.TOGATHER]: 'togather',
+        [CommunityTag.SHARE]: 'share',
+        [CommunityTag.LIFESTYLE]: 'lifestyle',
+        [CommunityTag.CHAT]: 'chat',
+        [CommunityTag.MARKET]: 'market',
+      }
+      filteredPosts = mockPosts.filter(
+        (post) => post.boardType === tagMap[selectedTag]
+      )
     }
+    
+    // 로딩 시뮬레이션
+    setTimeout(() => {
+      setPosts(filteredPosts)
+      setLoading(false)
+    }, 500)
   }
 
   // 로그인되어 있으면 아무것도 렌더링하지 않음 (리다이렉트 중)
@@ -208,7 +269,7 @@ export default function PreviewPage() {
                           <div className="flex items-center gap-3 text-xs text-text-tertiary">
                             <span className="flex items-center gap-1">
                               <User className="w-3.5 h-3.5" strokeWidth={1.5} />
-                              {post.author?.email.split('@')[0] || '익명'}
+                              {post.author?.nickname || '익명'}
                             </span>
                             <span className="flex items-center gap-1">
                               <HomeIcon className="w-3.5 h-3.5" strokeWidth={1.5} />
@@ -247,7 +308,10 @@ export default function PreviewPage() {
       {/* Floating Write Button */}
       <button
         onClick={() => setShowWriteDialog(true)}
-        className="fixed bottom-20 right-4 bg-primary text-white px-6 py-3 rounded-full shadow-lg font-medium active:scale-95 transition-transform z-30 flex items-center gap-2"
+        className="fixed bottom-20 right-4 text-white px-6 py-3 rounded-full shadow-lg font-medium active:scale-95 transition-transform z-30 flex items-center gap-2"
+        style={{
+            backgroundImage: 'linear-gradient(to right top, #45b393, #44b892, #44be91, #45c38f, #47c88d, #54cc87, #61d081, #6ed37a, #85d56f, #9bd766, #b0d85d, #c5d856)'
+        }}
       >
         <PenSquare className="w-5 h-5" strokeWidth={2} />
         <span>글쓰기</span>

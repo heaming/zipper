@@ -19,6 +19,9 @@ export class UserEntity {
   @Column()
   password: string;
 
+  @Column({ unique: true })
+  nickname: string;
+
   @Column({ nullable: true })
   phoneNumber: string;
 

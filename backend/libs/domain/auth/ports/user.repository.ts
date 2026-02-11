@@ -4,6 +4,7 @@ import { User } from '../models/user';
 export interface UserRepository {
   findById(id: number): Promise<User | null>;
   findByEmail(email: string): Promise<User | null>;
+  findByNickname(nickname: string): Promise<User | null>;
   save(user: User): Promise<User>;
   delete(id: number): Promise<void>;
 }

@@ -15,8 +15,15 @@ export interface LoginResponse {
   user: {
     id: string
     email: string
-    buildingId?: string
     nickname?: string
+    phoneNumber?: string
+    buildingId?: string
+    buildingName?: string
+    dong?: string
+    ho?: string
+    isBuildingVerified?: boolean
+    createdAt: string
+    updatedAt: string
   }
 }
 

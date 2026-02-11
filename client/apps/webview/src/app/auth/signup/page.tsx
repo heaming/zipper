@@ -129,12 +129,18 @@ export default function SignupPage() {
                   </label>
                   <input
                     type="text"
-                    placeholder="닉네임을 입력하세요"
+                    placeholder="2-10자, 한글/영문/숫자"
                     value={nickname}
                     onChange={(e) => setNickname(e.target.value)}
                     className="w-full px-4 py-3 rounded-lg border border-border bg-surface text-text-primary placeholder:text-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary"
                     required
+                    minLength={2}
+                    maxLength={10}
+                    pattern="[가-힣a-zA-Z0-9]+"
                   />
+                  <p className="text-xs text-text-tertiary mt-1">
+                    ⚠️ 닉네임은 변경할 수 없으니 신중하게 작성해주세요
+                  </p>
                 </div>
 
                 <Button type="submit" fullWidth className="mt-6" disabled={loading}>

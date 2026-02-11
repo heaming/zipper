@@ -6,13 +6,11 @@
 
 'use client'
 
-// 동적 렌더링 강제
-export const dynamic = 'force-dynamic'
-
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Card, CardContent, Button } from '@ui/index'
 import { CommunityTag, TAG_LABELS, TAG_ICONS } from '@zipper/models/src/community'
+import { cn } from '@/lib/utils'
 
 const writeOptions = [
   { tag: CommunityTag.TOGATHER, description: '공구·음식·배달 함께해요' },
@@ -22,7 +20,7 @@ const writeOptions = [
   { tag: CommunityTag.MARKET, description: '상업 광고 (권한 필요)' },
 ]
 
-function WritePageContent() {
+export default function WritePage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const tagParam = searchParams.get('tag')
@@ -39,6 +37,7 @@ function WritePageContent() {
   if (!selectedType) {
     return (
       <div className="flex flex-col min-h-screen bg-background">
+        {/* Header */}
         <header className="bg-surface border-b border-border">
           <div className="px-4 py-3 flex items-center justify-between">
             <h1 className="text-xl font-bold text-text-primary">글쓰기</h1>
@@ -51,6 +50,7 @@ function WritePageContent() {
           </div>
         </header>
 
+        {/* 타입 선택 */}
         <main className="flex-1 p-4">
           <p className="text-sm text-text-secondary mb-4">
             무엇을 하고 싶으신가요?
@@ -111,6 +111,7 @@ function WritePageContent() {
         <main className="flex-1 p-4 space-y-4">
           <Card>
             <CardContent className="p-4 space-y-4">
+              {/* 카테고리 */}
               <div>
                 <label className="text-sm font-medium text-text-primary mb-2 block">
                   카테고리
@@ -128,6 +129,7 @@ function WritePageContent() {
                 </div>
               </div>
 
+              {/* 제목 */}
               <div>
                 <label className="text-sm font-medium text-text-primary mb-2 block">
                   제목
@@ -139,6 +141,7 @@ function WritePageContent() {
                 />
               </div>
 
+              {/* 수량 & 마감시간 */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-sm font-medium text-text-primary mb-2 block">
@@ -161,6 +164,7 @@ function WritePageContent() {
                 </div>
               </div>
 
+              {/* 내용 */}
               <div>
                 <label className="text-sm font-medium text-text-primary mb-2 block">
                   상세 설명
@@ -228,25 +232,5 @@ function WritePageContent() {
         </Card>
       </main>
     </div>
-  )
-}
-
-// Suspense로 감싸서 export
-export default function WritePage() {
-  return (
-    <Suspense fallback={
-      <div className="flex flex-col min-h-screen bg-background">
-        <header className="bg-surface border-b border-border">
-          <div className="px-4 py-3 flex items-center justify-between">
-            <h1 className="text-xl font-bold text-text-primary">글쓰기</h1>
-          </div>
-        </header>
-        <main className="flex-1 p-4">
-          <p className="text-sm text-text-secondary">로딩 중...</p>
-        </main>
-      </div>
-    }>
-      <WritePageContent />
-    </Suspense>
   )
 }

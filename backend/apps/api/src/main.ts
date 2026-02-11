@@ -12,6 +12,9 @@ async function bootstrap() {
     credentials: true,
   });
 
+  // Global prefix
+  app.setGlobalPrefix('');
+
   // Validation pipe
   app.useGlobalPipes(
     new ValidationPipe({

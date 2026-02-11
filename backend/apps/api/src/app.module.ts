@@ -1,12 +1,12 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { APP_GUARD } from '@nestjs/core';
 import { DatabaseModule } from '@infrastructure/database/database.module';
 import { RedisModule } from '@infrastructure/cache/redis.module';
-import { AuthModule } from './auth/auth.module';
-import { CommunityModule } from './community/community.module';
-import { BuildingModule } from './building/building.module';
-import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
+import { AuthModule } from './modules/auth/auth.module';
+import { BuildingModule } from './modules/building/building.module';
+import { CommunityModule } from './modules/community/community.module';
+import { ChatModule } from './modules/chat/chat.module';
+import { NotificationModule } from './modules/notification/notification.module';
 
 @Module({
   imports: [
@@ -17,14 +17,10 @@ import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
     DatabaseModule,
     RedisModule,
     AuthModule,
-    CommunityModule,
     BuildingModule,
-  ],
-  providers: [
-    {
-      provide: APP_GUARD,
-      useClass: JwtAuthGuard,
-    },
+    CommunityModule,
+    ChatModule,
+    NotificationModule,
   ],
 })
 export class AppModule {}

@@ -4,6 +4,7 @@ export class User {
     public readonly id: number,
     public readonly email: string,
     public password: string,
+    public readonly nickname: string,
     public phoneNumber?: string,
     public createdAt?: Date,
     public updatedAt?: Date,

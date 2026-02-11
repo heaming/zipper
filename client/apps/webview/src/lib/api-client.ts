@@ -81,21 +81,87 @@ class ApiClient {
     })
   }
 
+  async getProfile() {
+    return this.request<{
+      id: string
+      email: string
+      buildings: Array<{ id: string; name: string; nickname: string }>
+    }>('/api/auth/profile')
+  }
+
   // Community APIs
-  async getPosts(boardType?: string, limit: number = 20) {
+  async getPosts(buildingId?: string, boardType?: string, limit: number = 20, page: number = 1) {
+    if (!buildingId) {
+      throw new Error('buildingId is required')
+    }
+    
     const params = new URLSearchParams()
-    if (boardType && boardType !== 'all') params.append('boardType', boardType)
+    params.append('buildingId', buildingId)
+    
+    // Map frontend CommunityTag to backend BoardType
+    if (boardType && boardType !== 'all' && typeof boardType === 'string') {
+      const boardTypeMap: Record<string, string> = {
+        'togather': 'DELIVERY',  // 같이 사요 -> DELIVERY
+        'share': 'FREE',         // 나눔 -> FREE
+        'lifestyle': 'LIFESTYLE', // ZIP 생활 -> LIFESTYLE
+        'chat': 'FREE',          // 잡담 -> FREE
+        'market': 'FREE',        // ZIP 마켓 -> FREE
+      }
+      const mappedBoardType = boardTypeMap[boardType.toLowerCase()]
+      if (mappedBoardType) {
+        params.append('boardType', mappedBoardType)
+      }
+    }
+    
+    params.append('page', page.toString())
     params.append('limit', limit.toString())
     
-    return this.request<any[]>(`/api/community/posts?${params.toString()}`)
+    return this.request<{
+      posts: any[]
+      total: number
+      page: number
+      limit: number
+    }>(`/api/community/posts?${params.toString()}`)
   }
 
   async getPost(id: number) {
     return this.request<any>(`/api/community/posts/${id}`)
   }
 
-  async getComments(postId: number) {
-    return this.request<any[]>(`/api/community/posts/${postId}/comments`)
+  async getComments(postId: number, page: number = 1, limit: number = 20, beforeId?: number) {
+    const params = new URLSearchParams()
+    params.append('page', page.toString())
+    params.append('limit', limit.toString())
+    if (beforeId) {
+      params.append('beforeId', beforeId.toString())
+    }
+    
+    return this.request<{
+      comments: any[]
+      total: number
+      page: number
+      limit: number
+      hasMore: boolean
+    }>(`/api/community/posts/${postId}/comments?${params.toString()}`)
+  }
+
+  async createComment(postId: number, content: string, parentCommentId?: number) {
+    return this.request<any>(`/api/community/posts/${postId}/comments`, {
+      method: 'POST',
+      body: JSON.stringify({ content, parentCommentId }),
+    })
+  }
+
+  async toggleLike(postId: number) {
+    return this.request<{ liked: boolean }>(`/api/community/posts/${postId}/like`, {
+      method: 'POST',
+    })
+  }
+
+  async incrementView(postId: number) {
+    return this.request<{ viewCount: number }>(`/api/community/posts/${postId}/view`, {
+      method: 'POST',
+    })
   }
 
   // Building APIs

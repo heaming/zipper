@@ -29,6 +29,60 @@ interface Post {
   }
 }
 
+// Mock data for home page
+const mockPosts: Post[] = [
+  {
+    id: 1,
+    title: '같이 배달 시키실 분 구해요!',
+    likeCount: 15,
+    commentCount: 8,
+    viewCount: 67,
+    createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+    boardType: 'togather',
+    author: { id: 1, email: 'kim@example.com' },
+  },
+  {
+    id: 2,
+    title: '책상 나눔합니다',
+    likeCount: 12,
+    commentCount: 5,
+    viewCount: 45,
+    createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
+    boardType: 'share',
+    author: { id: 2, email: 'lee@example.com' },
+  },
+  {
+    id: 3,
+    title: '우리 동네 맛집 추천해요',
+    likeCount: 20,
+    commentCount: 12,
+    viewCount: 89,
+    createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+    boardType: 'lifestyle',
+    author: { id: 3, email: 'park@example.com' },
+  },
+  {
+    id: 4,
+    title: '오늘 날씨 정말 좋네요',
+    likeCount: 8,
+    commentCount: 3,
+    viewCount: 34,
+    createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
+    boardType: 'chat',
+    author: { id: 4, email: 'choi@example.com' },
+  },
+  {
+    id: 5,
+    title: '공구 같이 하실 분 모집합니다',
+    likeCount: 18,
+    commentCount: 7,
+    viewCount: 56,
+    createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
+    boardType: 'togather',
+    author: { id: 5, email: 'jung@example.com' },
+  },
+]
+
 export default function HomePage() {
   const router = useRouter()
   const { isAuthenticated, user, logout } = useAuthStore()
@@ -43,31 +97,28 @@ export default function HomePage() {
       return
     }
 
-    // 게시글 데이터 가져오기
-    fetchPosts()
+    // Mockdata 사용 (기존과 동일한 UI/UX 유지)
+    loadMockPosts()
   }, [isAuthenticated, router])
 
-  const fetchPosts = async () => {
-    try {
-      setLoading(true)
-      const posts = await apiClient.getPosts('all', 20)
-      
-      // HOT 게시글 (좋아요 10개 이상 또는 isHot=true)
-      const hot = posts
-        .filter((p: Post) => p.likeCount >= 10)
-        .sort((a: Post, b: Post) => b.likeCount - a.likeCount)
+  const loadMockPosts = () => {
+    setLoading(true)
+    
+    // 로딩 시뮬레이션
+    setTimeout(() => {
+      // HOT 게시글 (좋아요 10개 이상)
+      const hot = mockPosts
+        .filter((p) => p.likeCount >= 10)
+        .sort((a, b) => b.likeCount - a.likeCount)
         .slice(0, 3)
       
       // 최근 게시글
-      const recent = posts.slice(0, 5)
+      const recent = mockPosts.slice(0, 5)
       
       setHotPosts(hot)
       setRecentPosts(recent)
-    } catch (error) {
-      console.error('Failed to fetch posts:', error)
-    } finally {
       setLoading(false)
-    }
+    }, 500)
   }
 
   // 로그인 안 되어있으면 아무것도 렌더링하지 않음
@@ -77,7 +128,7 @@ export default function HomePage() {
 
   const userLevel = 5
   const notificationCount = 3
-  const currentBuilding = user?.email.split('@')[0] || '사용자'
+  const currentBuilding = `${user?.buildingName}${user?.dong ? " " +user?.dong : ''}`
 
   const handleLogout = () => {
     logout()
@@ -147,11 +198,11 @@ export default function HomePage() {
       <main className="flex-1 px-4 py-4 space-y-4">
         {/* 현재 건물 카드 */}
         <Card>
-          <CardContent className="p-4">
+          <CardContent className="p-4 bg-transparent">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-text-secondary">현재 건물</p>
-                <h2 className="text-lg font-bold text-text-primary mt-1">
+                <p className="text-sm text-text-secondary">우리집</p>
+                <h2 className="text-sm font-bold text-text-secondary mt-1">
                   {currentBuilding}
                 </h2>
               </div>
@@ -252,7 +303,7 @@ export default function HomePage() {
                             </p>
                           </div>
                           <div className="flex items-center gap-2 mt-1 text-xs text-text-tertiary">
-                            <span>{post.author?.email.split('@')[0]}</span>
+                            <span>{post.author?.email?.split('@')[0] || '익명'}</span>
                             <span>·</span>
                             <span>{getTimeAgo(post.createdAt)}</span>
                           </div>

@@ -30,12 +30,9 @@ ENV NODE_ENV production
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# standalone 모드 복사
+# standalone 모드만 복사
 COPY --from=builder --chown=nextjs:nodejs /app/apps/webview/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/apps/webview/.next/static ./apps/webview/.next/static
-
-# public 디렉토리는 빈 디렉토리로 생성 (필요시)
-RUN mkdir -p ./apps/webview/public
 
 USER nextjs
 

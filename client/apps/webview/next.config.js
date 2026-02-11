@@ -11,6 +11,9 @@ const nextConfig = {
   env: {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000',
   },
+
+  // 동적 라우트 설정 (useSearchParams 사용 페이지)
+  output: 'standalone', // Docker 배포를 위한 설정
   
   // WebView에서 사용하지 않을 기능 비활성화
   swcMinify: true,

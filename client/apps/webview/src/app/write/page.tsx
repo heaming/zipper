@@ -6,6 +6,9 @@
 
 'use client'
 
+// 동적 렌더링 강제 (useSearchParams 사용으로 인해)
+export const dynamic = 'force-dynamic'
+
 import { useState } from 'react'
 import { Card, CardContent, Button } from '@ui/index'
 import { CommunityTag, TAG_LABELS, TAG_ICONS } from '@zipper/models/src/community'

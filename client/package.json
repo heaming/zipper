@@ -7,8 +7,9 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "cd apps/webview && npm run dev",
-    "build": "cd apps/webview && npm run build",
-    "start": "cd apps/webview && npm run start"
+    "dev": "node ../../node_modules/.bin/next dev -p 3001",
+    "build": "node ../../node_modules/.bin/next build",
+    "start": "node ../../node_modules/.bin/next start -p ${PORT:-3001}",
+    "lint": "node ../../node_modules/.bin/next lint"
   }
 }

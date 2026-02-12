@@ -27,10 +27,11 @@ interface Post {
 
 export default function PreviewPage() {
   const router = useRouter()
-  const { isAuthenticated } = useAuthStore()
+  const { isAuthenticated, user } = useAuthStore()
   const [selectedTag, setSelectedTag] = useState<CommunityTag>(CommunityTag.TOGATHER)
   const [showLockDialog, setShowLockDialog] = useState(false)
   const [showWriteDialog, setShowWriteDialog] = useState(false)
+  const [showVerificationDialog, setShowVerificationDialog] = useState(false)
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -307,7 +308,15 @@ export default function PreviewPage() {
 
       {/* Floating Write Button */}
       <button
-        onClick={() => setShowWriteDialog(true)}
+        onClick={() => {
+          // 인증되지 않았거나 인증 상태가 VERIFIED가 아니면 인증 유도 모달 표시
+          const verificationStatus = user?.buildingVerificationStatus
+          if (!isAuthenticated || !user || !verificationStatus || verificationStatus !== 'VERIFIED') {
+            setShowVerificationDialog(true)
+          } else {
+            setShowWriteDialog(true)
+          }
+        }}
         className="fixed bottom-20 right-4 text-white px-6 py-3 rounded-full shadow-lg font-medium active:scale-95 transition-transform z-30 flex items-center gap-2"
         style={{
             backgroundImage: 'linear-gradient(to right top, #45b393, #44b892, #44be91, #45c38f, #47c88d, #54cc87, #61d081, #6ed37a, #85d56f, #9bd766, #b0d85d, #c5d856)'

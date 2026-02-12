@@ -21,61 +21,38 @@ export class Building {
   @PrimaryGeneratedColumn()
   id: number;
 
+  // 건물명 (필수)
   @Column()
   name: string;
 
-  @Column({ nullable: true })
-  type: string;
-
-  @Column({ nullable: true })
-  postalCode: string;
-
-  @Column({ nullable: true })
-  city: string;
-
-  @Column({ nullable: true })
-  district: string;
-
-  @Column({ nullable: true })
-  neighborhood: string;
-
-  @Column({ nullable: true })
-  village: string;
-
-  // 도로명 주소
-  @Column({ nullable: true })
-  roadName: string;
-
-  @Column({ nullable: true })
-  roadNumber: string;
-
+  // 도로명 주소 전체 (카카오 우편번호 서비스 roadAddress)
   @Column({ nullable: true })
   roadAddress: string;
 
-  // 지번 주소
+  // 지번 주소 전체 (카카오 우편번호 서비스 jibunAddress)
   @Column({ nullable: true })
-  lotNumber: string;
+  jibunAddress: string;
 
+  // 법정동명 (카카오 우편번호 서비스 bname)
   @Column({ nullable: true })
-  lotAddress: string;
+  bname: string;
 
-  // 건물 상세
+  // 시/도 (카카오 우편번호 서비스 sido)
   @Column({ nullable: true })
-  buildingCode: string;
+  sido: string;
 
+  // 시/군/구 (카카오 우편번호 서비스 sigungu)
   @Column({ nullable: true })
-  totalHouseholds: number;
+  sigungu: string;
 
-  @Column({ nullable: true })
-  isVerified: boolean;
-
-  // 위치
+  // 위치 좌표 (카카오 로컬 API로 가져옴)
   @Column({ type: 'decimal', precision: 10, scale: 8, nullable: true })
   latitude: number;
 
   @Column({ type: 'decimal', precision: 11, scale: 8, nullable: true })
   longitude: number;
 
+  // 건물 유형
   @Column({
     type: 'enum',
     enum: BuildingType,
@@ -85,7 +62,7 @@ export class Building {
 
   // 통계
   @Column({ nullable: true })
-  userCount: number;
+  totalHouseholds: number;
 
   @Column({ nullable: true, default: true })
   isActive: boolean;

@@ -11,7 +11,9 @@ import { PostLike } from './domain/entities/post-like.entity';
 import { Comment } from './domain/entities/comment.entity';
 import { BuildingMembership, MembershipStatus } from '../building/domain/entities/building-membership.entity';
 import { User } from '../auth/domain/entities/user.entity';
+import { BuildingVerificationStatus } from '../auth/domain/entities/building-verification.entity';
 import { HotPostService } from './services/hot-post.service';
+import { ViewCountService } from './services/view-count.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { CreateCommentDto } from './dto/create-comment.dto';
@@ -30,6 +32,7 @@ export class CommunityService {
     @InjectRepository(User)
     private userRepository: Repository<User>,
     private hotPostService: HotPostService,
+    private viewCountService: ViewCountService,
   ) {}
 
   async getPosts(
@@ -151,11 +154,27 @@ export class CommunityService {
       throw new NotFoundException('게시글을 찾을 수 없습니다.');
     }
 
+    // 인증 상태 확인: VERIFIED가 아니면 상세 조회 불가
+    const user = await this.userRepository.findOne({
+      where: { id: userIdNum },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('사용자를 찾을 수 없습니다.');
+    }
+
+    if (user.buildingVerificationStatus !== BuildingVerificationStatus.VERIFIED) {
+      throw new ForbiddenException('건물 인증을 완료해야 게시글을 조회할 수 있습니다.');
+    }
+
     await this.verifyMembership(userIdNum, post.buildingId);
 
-    // 조회수 증가
-    post.viewCount += 1;
-    await this.postRepository.save(post);
+    // 조회수 증가 (Redis를 사용한 중복 방지)
+    const canIncrement = await this.viewCountService.canIncrementView(postIdNum, userIdNum);
+    if (canIncrement) {
+      post.viewCount += 1;
+      await this.postRepository.save(post);
+    }
 
     const author = await this.userRepository.findOne({
       where: { id: post.authorId },

@@ -1,62 +1,35 @@
-import { IsString, IsOptional, IsNumber, IsBoolean } from 'class-validator';
+import { IsString, IsOptional, IsNumber } from 'class-validator';
 
+/**
+ * 카카오 우편번호 서비스 응답 기준 DTO
+ * https://postcode.map.daum.net/guide 참고
+ */
 export class CreateBuildingDto {
   @IsString()
   name: string; // 건물명
 
+  // 카카오 우편번호 서비스 기본 필드 (실제 사용되는 필드만)
+  @IsOptional()
   @IsString()
-  type: string; // 건물 타입
-
-  // 행정구역
-  @IsString()
-  city: string;
-
-  @IsString()
-  district: string;
-
-  @IsString()
-  neighborhood: string;
+  roadAddress?: string; // 도로명 주소
 
   @IsOptional()
   @IsString()
-  village?: string;
-
-  // 도로명 주소
-  @IsOptional()
-  @IsString()
-  roadName?: string;
+  jibunAddress?: string; // 지번 주소
 
   @IsOptional()
   @IsString()
-  roadNumber?: string;
+  bname?: string; // 법정동명
 
   @IsOptional()
   @IsString()
-  roadAddress?: string;
-
-  // 지번 주소
-  @IsOptional()
-  @IsString()
-  lotNumber?: string;
+  sido?: string; // 시/도
 
   @IsOptional()
   @IsString()
-  lotAddress?: string;
+  sigungu?: string; // 시/군/구
 
-  // 건물 상세
-  @IsOptional()
-  @IsString()
-  dong?: string;
-
-  @IsOptional()
-  @IsString()
-  buildingCode?: string;
-
-  @IsOptional()
-  @IsString()
-  postalCode?: string;
-
-  // 위치
+  // 위치 좌표 (카카오 로컬 API로 가져옴)
   @IsOptional()
   @IsNumber()
   latitude?: number;
@@ -64,6 +37,11 @@ export class CreateBuildingDto {
   @IsOptional()
   @IsNumber()
   longitude?: number;
+
+  // 건물 타입
+  @IsOptional()
+  @IsString()
+  buildingType?: string;
 
   // 통계
   @IsOptional()

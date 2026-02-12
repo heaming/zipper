@@ -10,27 +10,27 @@ import {
 import { User } from './user.entity';
 import { Building } from '../../../building/domain/entities/building.entity';
 
-export enum VerificationType {
+export enum BuildingVerificationType {
+  POST_MAIL = 'POST_MAIL',
+  ID_CARD = 'ID_CARD',
   GPS = 'GPS',
-  INVITE_CODE = 'INVITE_CODE',
-  PHOTO = 'PHOTO',
 }
 
-export enum VerificationStatus {
+export enum BuildingVerificationStatus {
   PENDING = 'PENDING',
-  APPROVED = 'APPROVED',
+  VERIFIED = 'VERIFIED',
   REJECTED = 'REJECTED',
 }
 
-@Entity('residence_verifications')
-export class ResidenceVerification {
+@Entity('building_verifications')
+export class BuildingVerification {
   @PrimaryGeneratedColumn()
   id: number;
 
   @Column()
   userId: number;
 
-  @ManyToOne(() => User, (user) => user.verifications)
+  @ManyToOne(() => User, (user) => user.buildingVerifications)
   @JoinColumn({ name: 'userId' })
   user: User;
 
@@ -43,28 +43,35 @@ export class ResidenceVerification {
 
   @Column({
     type: 'enum',
-    enum: VerificationType,
+    enum: BuildingVerificationType,
   })
-  verificationType: VerificationType;
+  verificationType: BuildingVerificationType;
 
   @Column({
     type: 'enum',
-    enum: VerificationStatus,
-    default: VerificationStatus.PENDING,
+    enum: BuildingVerificationStatus,
+    default: BuildingVerificationStatus.PENDING,
   })
-  status: VerificationStatus;
+  status: BuildingVerificationStatus;
 
+  // GPS 인증용
   @Column({ type: 'decimal', precision: 10, scale: 8, nullable: true })
   gpsLatitude: number;
 
   @Column({ type: 'decimal', precision: 11, scale: 8, nullable: true })
   gpsLongitude: number;
 
+  // 우편물 인증용 (사진 URL)
   @Column({ nullable: true })
-  inviteCode: string;
+  postMailPhotoUrl: string;
 
-  @Column({ nullable: true })
-  verificationPhotoUrl: string;
+  // 주민등록증 인증용 (OCR 결과, 마스킹된 이미지는 저장하지 않음)
+  @Column({ type: 'json', nullable: true })
+  idCardOcrResult: {
+    name?: string;
+    address?: string;
+    registrationNumber?: string; // 마스킹된 주민등록번호
+  };
 
   @Column({ nullable: true })
   verifiedAt: Date;

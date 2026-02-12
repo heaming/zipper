@@ -18,6 +18,7 @@ interface User {
   dong?: string
   ho?: string
   isBuildingVerified?: boolean
+  buildingVerificationStatus?: 'PENDING' | 'VERIFIED' | 'REJECTED'
   createdAt: string
   updatedAt: string
 }

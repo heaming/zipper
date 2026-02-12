@@ -9,7 +9,7 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
-import { ResidenceVerification } from './residence-verification.entity';
+import { BuildingVerification, BuildingVerificationStatus } from './building-verification.entity';
 import { BuildingMembership } from '../../../building/domain/entities/building-membership.entity';
 import { Building } from '../../../building/domain/entities/building.entity';
 
@@ -24,8 +24,8 @@ export class User {
   @Column()
   password: string; // hashed
 
-  @Column()
-  nickname: string;
+  @Column({ unique: true })
+  nickname: string; // 닉네임은 중복 불가, 변경 불가
 
   @Column({ nullable: true })
   phoneNumber: string;
@@ -43,8 +43,12 @@ export class User {
   @Column({ nullable: true })
   ho: string; // 호수 정보 (예: '1201호', '701호')
 
-  @Column({ default: false })
-  isBuildingVerified: boolean;
+  @Column({
+    type: 'enum',
+    enum: BuildingVerificationStatus,
+    default: BuildingVerificationStatus.PENDING,
+  })
+  buildingVerificationStatus: BuildingVerificationStatus;
 
   @CreateDateColumn()
   createdAt: Date;
@@ -55,8 +59,8 @@ export class User {
   @DeleteDateColumn()
   deletedAt: Date;
 
-  @OneToMany(() => ResidenceVerification, (verification) => verification.user)
-  verifications: ResidenceVerification[];
+  @OneToMany(() => BuildingVerification, (verification) => verification.user)
+  buildingVerifications: BuildingVerification[];
 
   @OneToMany(() => BuildingMembership, (membership: BuildingMembership) => membership.user)
   memberships: BuildingMembership[];

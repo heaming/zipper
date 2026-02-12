@@ -6,6 +6,8 @@
 export * from './community'
 
 // User Models
+export type BuildingVerificationStatus = 'PENDING' | 'VERIFIED' | 'REJECTED'
+
 export interface User {
   id: string
   email: string
@@ -15,7 +17,7 @@ export interface User {
   buildingName?: string
   dong?: string
   ho?: string
-  isBuildingVerified?: boolean
+  buildingVerificationStatus?: BuildingVerificationStatus
   createdAt: string
   updatedAt: string
 }

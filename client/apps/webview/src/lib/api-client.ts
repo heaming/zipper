@@ -59,12 +59,37 @@ class ApiClient {
   }
 
   // Auth APIs
+  async checkEmailExists(email: string) {
+    return this.request<{ exists: boolean }>('/api/auth/check-email', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    })
+  }
+
+  async checkNicknameExists(nickname: string) {
+    return this.request<{ exists: boolean }>('/api/auth/check-nickname', {
+      method: 'POST',
+      body: JSON.stringify({ nickname }),
+    })
+  }
+
+  async checkPhoneNumberExists(phoneNumber: string) {
+    return this.request<{ exists: boolean }>('/api/auth/check-phone', {
+      method: 'POST',
+      body: JSON.stringify({ phoneNumber }),
+    })
+  }
+
   async signup(data: {
     email: string
     password: string
-    nickname?: string
+    nickname: string
+    phoneNumber: string
+    buildingId: number
+    dong?: string
+    ho?: string
   }) {
-    return this.request<{ userId: string; message: string }>('/api/auth/signup', {
+    return this.request<{ userId: string; buildingId: number; message: string }>('/api/auth/signup', {
       method: 'POST',
       body: JSON.stringify(data),
     })
@@ -74,7 +99,19 @@ class ApiClient {
     return this.request<{
       accessToken: string
       refreshToken: string
-      user: { id: string; email: string }
+      user: {
+        id: string
+        email: string
+        nickname: string
+        phoneNumber?: string
+        buildingId?: number
+        buildingName?: string
+        dong?: string
+        ho?: string
+        buildingVerificationStatus: 'PENDING' | 'VERIFIED' | 'REJECTED'
+        createdAt: string
+        updatedAt: string
+      }
     }>('/api/auth/login', {
       method: 'POST',
       body: JSON.stringify(data),
@@ -166,11 +203,102 @@ class ApiClient {
 
   // Building APIs
   async searchBuildings(keyword: string) {
-    return this.request<any[]>(`/buildings/search?keyword=${encodeURIComponent(keyword)}`)
+    return this.request<{ buildings: Array<{ id: number; name: string; address: string; buildingType?: string }> }>(
+      `/api/buildings/search?q=${encodeURIComponent(keyword)}`
+    )
+  }
+
+  async createBuilding(data: {
+    name: string
+    roadAddress?: string
+    jibunAddress?: string
+    bname?: string
+    sido?: string
+    sigungu?: string
+    buildingType?: string
+  }) {
+    return this.request<{ id: number; name: string; roadAddress?: string; jibunAddress?: string }>('/api/buildings', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
   }
 
   async getBuildings() {
     return this.request<any[]>('/buildings')
+  }
+
+  // Email Verification APIs
+  async sendEmailVerificationCode(data: { email: string }) {
+    return this.request<{ message: string }>('/api/auth/send-email-verification', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async verifyEmailCode(data: { email: string; code: string }) {
+    return this.request<{ verified: boolean }>('/api/auth/verify-email-code', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  // Building Verification APIs
+  async verifyBuildingByGps(data: {
+    buildingId: number
+    latitude: number
+    longitude: number
+  }) {
+    return this.request<{
+      verificationId: number
+      status: 'PENDING' | 'VERIFIED' | 'REJECTED'
+      distance?: number
+    }>('/api/auth/verify-residence/gps', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
+  async verifyBuildingByPostMail(data: {
+    buildingId: number
+    photo: File
+  }) {
+    const formData = new FormData()
+    formData.append('buildingId', data.buildingId.toString())
+    formData.append('photo', data.photo)
+
+    return this.request<{
+      verificationId: number
+      status: 'PENDING' | 'VERIFIED' | 'REJECTED'
+      message?: string
+    }>('/api/auth/verify-residence/post-mail', {
+      method: 'POST',
+      body: formData,
+      headers: {
+        ...this.getAuthHeader(),
+        // FormData는 Content-Type을 자동으로 설정하므로 제거
+      },
+    })
+  }
+
+  async verifyBuildingByIdCard(data: {
+    buildingId: number
+    idCard: File
+  }) {
+    const formData = new FormData()
+    formData.append('buildingId', data.buildingId.toString())
+    formData.append('idCard', data.idCard)
+
+    return this.request<{
+      verificationId: number
+      status: 'PENDING' | 'VERIFIED' | 'REJECTED'
+      message?: string
+    }>('/api/auth/verify-residence/id-card', {
+      method: 'POST',
+      body: formData,
+      headers: {
+        ...this.getAuthHeader(),
+      },
+    })
   }
 }
 

@@ -7,8 +7,8 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Eye, Home as HomeIcon, MessageCircle, User, ArrowUp, Lock, MoreVertical, Pencil, Trash2, Flag } from 'lucide-react'
-import { Card, CardContent, Button, Divider, Badge } from '@ui/index'
+import { ArrowLeft, Eye, Home as HomeIcon, MessageCircle, User, ArrowUp, Lock, MoreVertical, Pencil, Trash2, Flag, MapPin } from 'lucide-react'
+import { Card, CardContent, Button, Divider, Badge, BottomSheet, BottomSheetContent } from '@ui/index'
 import { CommunityTag, TAG_ICONS } from '@zipper/models/src/community'
 import { apiClient } from '@/lib/api-client'
 import { useAuthStore } from '@/stores/auth-store'
@@ -70,6 +70,9 @@ export default function PostDetailPage() {
   const [totalComments, setTotalComments] = useState(0)
   const commentsRef = useRef<Comment[]>([])
   
+  // 인증 관련 state
+  const [showVerificationSheet, setShowVerificationSheet] = useState(false)
+  
   // comments ref 동기화
   useEffect(() => {
     commentsRef.current = comments
@@ -92,8 +95,18 @@ export default function PostDetailPage() {
         // 조회수 증가 실패는 무시 (이미 getPostById에서 조회수가 증가했을 수 있음)
         console.warn('Failed to increment view:', viewError)
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to fetch post:', error)
+      
+      // 인증 관련 에러인 경우 Bottom Sheet 표시
+      if (error?.message?.includes('인증') || error?.message?.includes('건물 인증')) {
+        setShowVerificationSheet(true)
+      } else {
+        // 다른 에러는 그대로 표시
+        alert(error?.message || '게시글을 불러오는데 실패했습니다.')
+      }
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -821,6 +834,49 @@ export default function PostDetailPage() {
           </form>
         </div>
       </div>
+
+      {/* Verification Bottom Sheet */}
+      <BottomSheet open={showVerificationSheet} onOpenChange={setShowVerificationSheet}>
+        <BottomSheetContent>
+          <div className="text-center mb-6">
+            <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+              <Lock className="w-8 h-8 text-text-secondary" strokeWidth={1.5} />
+            </div>
+            <h3 className="text-lg font-semibold text-text-primary mb-2">
+              건물 인증이 필요해요
+            </h3>
+            <p className="text-sm text-text-secondary">
+              게시글을 보려면 건물 인증을 완료해주세요
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            <Button
+              fullWidth
+              onClick={() => {
+                setShowVerificationSheet(false)
+                router.push('/auth/verify-building')
+              }}
+              style={{
+                backgroundImage: 'linear-gradient(to right top, #45b393, #44b892, #44be91, #45c38f, #47c88d, #54cc87, #61d081, #6ed37a, #85d56f, #9bd766, #b0d85d, #c5d856)'
+              }}
+            >
+              <MapPin className="w-4 h-4 mr-2" />
+              건물 인증하기
+            </Button>
+            <Button
+              variant="secondary"
+              fullWidth
+              onClick={() => {
+                setShowVerificationSheet(false)
+                router.back()
+              }}
+            >
+              나중에 하기
+            </Button>
+          </div>
+        </BottomSheetContent>
+      </BottomSheet>
     </div>
   )
 }

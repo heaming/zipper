@@ -220,6 +220,34 @@ class ApiClient {
     })
   }
 
+  // Activity APIs (내 활동 내역)
+  async getMyPosts(page: number = 1, limit: number = 20) {
+    return this.request<{
+      posts: any[]
+      total: number
+      page: number
+      limit: number
+    }>(`/api/community/activity/posts?page=${page}&limit=${limit}`)
+  }
+
+  async getMyComments(page: number = 1, limit: number = 20) {
+    return this.request<{
+      comments: any[]
+      total: number
+      page: number
+      limit: number
+    }>(`/api/community/activity/comments?page=${page}&limit=${limit}`)
+  }
+
+  async getMyLikedPosts(page: number = 1, limit: number = 20) {
+    return this.request<{
+      posts: any[]
+      total: number
+      page: number
+      limit: number
+    }>(`/api/community/activity/likes?page=${page}&limit=${limit}`)
+  }
+
   // Building APIs
   async searchBuildings(keyword: string) {
     return this.request<{ buildings: Array<{ id: number; name: string; address: string; buildingType?: string }> }>(

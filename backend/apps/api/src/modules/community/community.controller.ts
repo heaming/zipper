@@ -144,4 +144,44 @@ export class CommunityController {
   ) {
     return this.communityService.toggleCommentLike(id, user.id);
   }
+
+  // 내 활동 내역 API
+  @Get('activity/posts')
+  async getMyPosts(
+    @CurrentUser() user: any,
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '20',
+  ) {
+    return this.communityService.getMyPosts(
+      user.id,
+      parseInt(page),
+      parseInt(limit),
+    );
+  }
+
+  @Get('activity/comments')
+  async getMyComments(
+    @CurrentUser() user: any,
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '20',
+  ) {
+    return this.communityService.getMyComments(
+      user.id,
+      parseInt(page),
+      parseInt(limit),
+    );
+  }
+
+  @Get('activity/likes')
+  async getMyLikedPosts(
+    @CurrentUser() user: any,
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '20',
+  ) {
+    return this.communityService.getMyLikedPosts(
+      user.id,
+      parseInt(page),
+      parseInt(limit),
+    );
+  }
 }

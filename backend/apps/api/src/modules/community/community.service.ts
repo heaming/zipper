@@ -508,6 +508,150 @@ export class CommunityService {
     throw new NotFoundException('댓글 좋아요 기능은 지원하지 않습니다.');
   }
 
+  async getMyPosts(userId: string, page: number = 1, limit: number = 20) {
+    const userIdNum = parseInt(userId, 10);
+
+    const [posts, total] = await this.postRepository.findAndCount({
+      where: { authorId: userIdNum },
+      order: { createdAt: 'DESC' },
+      skip: (page - 1) * limit,
+      take: limit,
+      relations: ['author'],
+    });
+
+    const postsWithNicknames = await Promise.all(
+      posts.map(async (post) => {
+        const author = await this.userRepository.findOne({
+          where: { id: post.authorId },
+        });
+
+        return {
+          id: post.id,
+          title: post.title,
+          content: post.content,
+          imageUrls: post.imageUrls || [],
+          author: {
+            id: post.authorId,
+            nickname: author?.nickname || '익명',
+          },
+          boardType: post.boardType,
+          likeCount: post.likeCount,
+          commentCount: post.commentCount,
+          viewCount: post.viewCount,
+          isHot: post.isHot,
+          createdAt: post.createdAt,
+        };
+      }),
+    );
+
+    return {
+      posts: postsWithNicknames,
+      total,
+      page,
+      limit,
+    };
+  }
+
+  async getMyComments(userId: string, page: number = 1, limit: number = 20) {
+    const userIdNum = parseInt(userId, 10);
+
+    const [comments, total] = await this.commentRepository.findAndCount({
+      where: { authorId: userIdNum },
+      order: { createdAt: 'DESC' },
+      skip: (page - 1) * limit,
+      take: limit,
+      relations: ['post'],
+    });
+
+    const commentsWithPostInfo = await Promise.all(
+      comments.map(async (comment) => {
+        const post = await this.postRepository.findOne({
+          where: { id: comment.postId },
+        });
+
+        const author = await this.userRepository.findOne({
+          where: { id: comment.authorId },
+        });
+
+        return {
+          id: comment.id,
+          content: comment.content,
+          postId: comment.postId,
+          postTitle: post?.title || '삭제된 게시글',
+          boardType: post?.boardType || 'chat',
+          author: {
+            id: comment.authorId,
+            nickname: author?.nickname || '익명',
+          },
+          createdAt: comment.createdAt,
+        };
+      }),
+    );
+
+    return {
+      comments: commentsWithPostInfo,
+      total,
+      page,
+      limit,
+    };
+  }
+
+  async getMyLikedPosts(userId: string, page: number = 1, limit: number = 20) {
+    const userIdNum = parseInt(userId, 10);
+
+    const [likes, total] = await this.postLikeRepository.findAndCount({
+      where: { userId: userIdNum },
+      order: { createdAt: 'DESC' },
+      skip: (page - 1) * limit,
+      take: limit,
+      relations: ['post'],
+    });
+
+    const postsWithNicknames = await Promise.all(
+      likes.map(async (like) => {
+        const post = await this.postRepository.findOne({
+          where: { id: like.postId },
+          relations: ['author'],
+        });
+
+        if (!post) {
+          return null;
+        }
+
+        const author = await this.userRepository.findOne({
+          where: { id: post.authorId },
+        });
+
+        return {
+          id: post.id,
+          title: post.title,
+          content: post.content,
+          imageUrls: post.imageUrls || [],
+          author: {
+            id: post.authorId,
+            nickname: author?.nickname || '익명',
+          },
+          boardType: post.boardType,
+          likeCount: post.likeCount,
+          commentCount: post.commentCount,
+          viewCount: post.viewCount,
+          isHot: post.isHot,
+          createdAt: post.createdAt,
+        };
+      }),
+    );
+
+    // null 값 제거 (삭제된 게시글)
+    const validPosts = postsWithNicknames.filter((post) => post !== null);
+
+    return {
+      posts: validPosts,
+      total,
+      page,
+      limit,
+    };
+  }
+
   private async verifyMembership(userId: number, buildingId: number) {
     const membership = await this.membershipRepository.findOne({
       where: {

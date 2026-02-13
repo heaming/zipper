@@ -4,6 +4,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { User, FileText, ShoppingBasket, Gift, Bell, Building2, Settings, ChevronRight, MapPin, Mail, CreditCard, CheckCircle2, Home, Package, Leaf, Flower2, TreeDeciduous, Trees, Key } from 'lucide-react'
 import { Card, CardContent, Divider, Button, BottomSheet, BottomSheetContent } from '@ui/index'
 import { useAuthStore } from '@/stores/auth-store'
@@ -381,7 +382,9 @@ export default function ProfilePage() {
         {/* 활동 내역 */}
         <Card>
           <CardContent className="p-4 space-y-1">
-            <MenuItem icon={FileText} label="내가 쓴 글" />
+            <Link href="/profile/activity">
+              <MenuItem icon={FileText} label="내 활동 내역" />
+            </Link>
             <Divider />
             <MenuItem icon={ShoppingBasket} label="참여한 같이사요" />
             <Divider />

@@ -6,13 +6,13 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
-import { ArrowLeft, Pencil, MessageSquareReply, Home as HomeIcon, User, MessageCircle } from 'lucide-react'
-import { Card, CardContent, Divider } from '@ui/index'
-import { CommunityTag, TAG_LABELS, TAG_ICONS } from '@zipper/models/src/community'
+import { ArrowLeft, Pencil, MessageSquareReply, Home as HomeIcon } from 'lucide-react'
+import { Card, CardContent } from '@ui/index'
 import { cn } from '@/lib/utils'
 import { apiClient } from '@/lib/api-client'
 import { useAuthStore } from '@/stores/auth-store'
+import { CommunityPostCard } from '@/features/community/components/community-post-card'
+import { CommentCard } from '@/features/community/components/comment-card'
 
 type TabType = 'posts' | 'comments' | 'likes'
 
@@ -66,15 +66,6 @@ const tabs = [
   { id: 'likes' as TabType, label: '관심', icon: HomeIcon },
 ]
 
-const tagColors: Record<CommunityTag, string> = {
-  [CommunityTag.ALL]: '#4ccf89',
-  [CommunityTag.TOGATHER]: '#fd6174',
-  [CommunityTag.SHARE]: '#7ba8f0',
-  [CommunityTag.LIFESTYLE]: '#ff8e60',
-  [CommunityTag.CHAT]: '#4ccf89',
-  [CommunityTag.MARKET]: '#a88af8',
-}
-
 export default function ActivityPage() {
   const router = useRouter()
   const { isAuthenticated } = useAuthStore()
@@ -84,48 +75,6 @@ export default function ActivityPage() {
   const [likedPosts, setLikedPosts] = useState<LikedPost[]>([])
   const [loading, setLoading] = useState(true)
 
-  const getTimeAgo = (dateString: string) => {
-    const now = new Date()
-    const past = new Date(dateString)
-    const diffMs = now.getTime() - past.getTime()
-    const diffMins = Math.floor(diffMs / 60000)
-    const diffHours = Math.floor(diffMs / 3600000)
-    const diffDays = Math.floor(diffMs / 86400000)
-
-    if (diffMins < 1) return '방금 전'
-    if (diffMins < 60) return `${diffMins}분 전`
-    if (diffHours < 24) return `${diffHours}시간 전`
-    if (diffDays === 1) return '어제'
-    if (diffDays < 7) return `${diffDays}일 전`
-    return past.toLocaleDateString()
-  }
-
-  const getBoardTypeLabel = (boardType: string) => {
-    const labels: Record<string, string> = {
-      togather: '같이 사요',
-      share: '나눔',
-      lifestyle: 'ZIP 생활',
-      chat: '잡담',
-      market: '중고장터'
-    }
-    return labels[boardType] || boardType
-  }
-
-  const getTagClass = (boardType: string) => {
-    return `tag-${boardType.toLowerCase()}`
-  }
-
-  const getBoardTypeCommunityTag = (boardType: string): CommunityTag => {
-    const mapping: Record<string, CommunityTag> = {
-      'togather': CommunityTag.TOGATHER,
-      'share': CommunityTag.SHARE,
-      'lifestyle': CommunityTag.LIFESTYLE,
-      'chat': CommunityTag.CHAT,
-      'market': CommunityTag.MARKET,
-      'all': CommunityTag.ALL
-    }
-    return mapping[boardType.toLowerCase()] || CommunityTag.ALL
-  }
 
   // API 호출 함수들
   const fetchMyPosts = async () => {
@@ -208,57 +157,7 @@ export default function ActivityPage() {
     return (
       <div className="space-y-3">
         {posts.map((post) => (
-          <Link key={post.id} href={`/community/${post.id}`}>
-            <Card className="hover:shadow-md transition-shadow cursor-pointer">
-              <CardContent className="p-4">
-                {/* Tag Badge */}
-                <div className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[11px] bg-gray-50 mb-2">
-                  {(() => {
-                    const tag = getBoardTypeCommunityTag(post.boardType)
-                    const Icon = TAG_ICONS[tag]
-                    const color = tagColors[tag]
-                    return Icon ? (
-                      <Icon className={cn("w-2.5 h-2.5", getTagClass(post.boardType))} strokeWidth={1.5} style={{ color }} />
-                    ) : null
-                  })()}
-                  <span className="text-gray-400">
-                    {getBoardTypeLabel(post.boardType)}
-                  </span>
-                </div>
-
-                {/* Title */}
-                <h3 className="font-medium text-text-primary mb-2 line-clamp-2">
-                  {post.title}
-                </h3>
-
-                {/* Content Preview */}
-                {post.content && (
-                  <p className="text-sm text-text-secondary line-clamp-2 mb-3">
-                    {post.content}
-                  </p>
-                )}
-
-                <Divider />
-
-                {/* Meta Info */}
-                <div className="flex items-center justify-between text-sm text-text-tertiary mt-3">
-                  <div className="flex items-center gap-3">
-                    <span>{getTimeAgo(post.createdAt)}</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="flex items-center gap-1">
-                      <MessageCircle className="w-3.5 h-3.5" strokeWidth={1.5} />
-                      {post.commentCount}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <HomeIcon className="w-3.5 h-3.5" strokeWidth={1.5} />
-                      {post.likeCount}
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
+          <CommunityPostCard key={post.id} post={post} showAuthor={false} />
         ))}
       </div>
     )
@@ -289,41 +188,7 @@ export default function ActivityPage() {
     return (
       <div className="space-y-3">
         {comments.map((comment) => (
-          <Link key={comment.id} href={`/community/${comment.postId}`}>
-            <Card className="hover:shadow-md transition-shadow cursor-pointer">
-              <CardContent className="p-4">
-                {/* Post Title */}
-                <div className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[11px] bg-gray-50 mb-2">
-                  {(() => {
-                    const tag = getBoardTypeCommunityTag(comment.boardType)
-                    const Icon = TAG_ICONS[tag]
-                    const color = tagColors[tag]
-                    return Icon ? (
-                      <Icon className={cn("w-2.5 h-2.5", getTagClass(comment.boardType))} strokeWidth={1.5} style={{ color }} />
-                    ) : null
-                  })()}
-                  <span className="text-gray-400">
-                    {getBoardTypeLabel(comment.boardType)}
-                  </span>
-                </div>
-                <h3 className="font-medium text-text-primary mb-2 line-clamp-1 text-sm">
-                  {comment.postTitle}
-                </h3>
-
-                {/* Comment Content */}
-                <p className="text-sm text-text-secondary line-clamp-2 mb-3">
-                  {comment.content}
-                </p>
-
-                <Divider />
-
-                {/* Meta Info */}
-                <div className="flex items-center justify-between text-sm text-text-tertiary mt-3">
-                  <span>{getTimeAgo(comment.createdAt)}</span>
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
+          <CommentCard key={comment.id} comment={comment} />
         ))}
       </div>
     )
@@ -354,61 +219,7 @@ export default function ActivityPage() {
     return (
       <div className="space-y-3">
         {likedPosts.map((post) => (
-          <Link key={post.id} href={`/community/${post.id}`}>
-            <Card className="hover:shadow-md transition-shadow cursor-pointer">
-              <CardContent className="p-4">
-                {/* Tag Badge */}
-                <div className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[11px] bg-gray-50 mb-2">
-                  {(() => {
-                    const tag = getBoardTypeCommunityTag(post.boardType)
-                    const Icon = TAG_ICONS[tag]
-                    const color = tagColors[tag]
-                    return Icon ? (
-                      <Icon className={cn("w-2.5 h-2.5", getTagClass(post.boardType))} strokeWidth={1.5} style={{ color }} />
-                    ) : null
-                  })()}
-                  <span className="text-gray-400">
-                    {getBoardTypeLabel(post.boardType)}
-                  </span>
-                </div>
-
-                {/* Title */}
-                <h3 className="font-medium text-text-primary mb-2 line-clamp-2">
-                  {post.title}
-                </h3>
-
-                {/* Content Preview */}
-                {post.content && (
-                  <p className="text-sm text-text-secondary line-clamp-2 mb-3">
-                    {post.content}
-                  </p>
-                )}
-
-                <Divider />
-
-                {/* Meta Info */}
-                <div className="flex items-center justify-between text-sm text-text-tertiary mt-3">
-                  <div className="flex items-center gap-3">
-                    <span className="flex items-center gap-1">
-                      <User className="w-3.5 h-3.5" strokeWidth={1.5} />
-                      {post.author?.nickname || '익명'}
-                    </span>
-                    <span>{getTimeAgo(post.createdAt)}</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="flex items-center gap-1">
-                      <MessageCircle className="w-3.5 h-3.5" strokeWidth={1.5} />
-                      {post.commentCount}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <HomeIcon className="w-3.5 h-3.5" strokeWidth={1.5} />
-                      {post.likeCount}
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
+          <CommunityPostCard key={post.id} post={post} />
         ))}
       </div>
     )

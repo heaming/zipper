@@ -165,11 +165,13 @@ export class AuthService {
 
       // building 정보 로드
       let buildingName = null;
+      let bname = null;
       if (user.buildingId) {
         const building = await this.buildingRepository.findOne({
           where: { id: user.buildingId },
         });
         buildingName = building?.name || null;
+        bname = building?.bname || null;
       }
 
       const payload = { sub: user.id, email: user.email };
@@ -186,6 +188,7 @@ export class AuthService {
           phoneNumber: user.phoneNumber,
           buildingId: user.buildingId,
           buildingName,
+          bname,
           dong: user.dong,
           ho: user.ho,
           buildingVerificationStatus: user.buildingVerificationStatus,

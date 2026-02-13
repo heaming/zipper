@@ -106,6 +106,7 @@ class ApiClient {
         phoneNumber?: string
         buildingId?: number
         buildingName?: string
+        bname?: string
         dong?: string
         ho?: string
         buildingVerificationStatus: 'PENDING' | 'VERIFIED' | 'REJECTED'
@@ -225,6 +226,22 @@ class ApiClient {
 
   async getBuildings() {
     return this.request<any[]>('/buildings')
+  }
+
+  async getBuildingById(buildingId: number) {
+    return this.request<{
+      id: number
+      name: string
+      roadAddress?: string
+      jibunAddress?: string
+      sido?: string
+      sigungu?: string
+      bname?: string
+      buildingType?: string
+      totalHouseholds?: number
+      memberCount: number
+      isMember: boolean
+    }>(`/api/buildings/${buildingId}`)
   }
 
   // Email Verification APIs

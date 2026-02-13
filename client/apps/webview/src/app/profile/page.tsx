@@ -3,7 +3,7 @@
  */
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { User, FileText, ShoppingBasket, Gift, Bell, Building2, Settings, ChevronRight, MapPin, Mail, CreditCard, CheckCircle2, Home } from 'lucide-react'
 import { Card, CardContent, Divider, Button, BottomSheet, BottomSheetContent } from '@ui/index'
 import { useAuthStore } from '@/stores/auth-store'
@@ -19,13 +19,38 @@ export default function ProfilePage() {
 
   const isVerified = user?.buildingVerificationStatus === 'VERIFIED'
   const verificationText = isVerified ? '인증 완료' : '인증 미완료'
-  const dongText = user?.dong ? `${user.dong} ` : ''
+  const verificationTextClass = isVerified ? 'text-primary' : 'text-[#fd6174]'
+  const bnameText = user?.bname ? `${user.bname} ` : ''
   const buildingNameText = user?.buildingName ? `${user.buildingName} · ` : ''
 
   const handleLogout = () => {
     logout()
     router.push('/')
   }
+
+  // building 정보를 가져와서 bname 업데이트
+  useEffect(() => {
+    const loadBuildingInfo = async () => {
+      if (user?.buildingId && !user.bname) {
+        try {
+          const building = await apiClient.getBuildingById(parseInt(String(user.buildingId)))
+          if (user) {
+            setUser({
+              ...user,
+              buildingName: building.name,
+              bname: building.bname,
+            })
+          }
+        } catch (err) {
+          // building 정보를 가져오지 못해도 무시
+          console.error('Failed to load building info:', err)
+        }
+      }
+    }
+    
+    loadBuildingInfo()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.buildingId, user?.bname])
 
   const handleStartVerification = () => {
     setShowVerificationModal(true)
@@ -60,8 +85,24 @@ export default function ProfilePage() {
             })
 
             if (result.status === 'VERIFIED') {
-              // 사용자 정보 업데이트
-              if (user) {
+              // 사용자 정보 업데이트 (building 정보도 함께 가져와서 bname 포함)
+              if (user && user.buildingId) {
+                try {
+                  const building = await apiClient.getBuildingById(parseInt(String(user.buildingId)))
+                  setUser({
+                    ...user,
+                    buildingVerificationStatus: 'VERIFIED',
+                    buildingName: building.name,
+                    bname: building.bname,
+                  })
+                } catch (err) {
+                  // building 정보를 가져오지 못해도 인증 상태만 업데이트
+                  setUser({
+                    ...user,
+                    buildingVerificationStatus: 'VERIFIED',
+                  })
+                }
+              } else if (user) {
                 setUser({
                   ...user,
                   buildingVerificationStatus: 'VERIFIED',
@@ -129,10 +170,10 @@ export default function ProfilePage() {
                 <User className="w-8 h-8 text-primary" strokeWidth={1.5} />
               </div>
               <div className="flex-1">
-                <h2 className="text-lg font-bold text-text-primary">{user?.email.split('@')[0] || '사용자'}</h2>
+                <h2 className="text-lg font-bold text-text-primary">{user?.nickname}</h2>
                 <div className="mt-1">
                   <p className="text-sm text-text-secondary">
-                    {dongText}{buildingNameText}{verificationText}
+                    {bnameText}{buildingNameText}<span className={verificationTextClass}>{verificationText}</span>
                   </p>
                   {!isVerified && (
                     <button

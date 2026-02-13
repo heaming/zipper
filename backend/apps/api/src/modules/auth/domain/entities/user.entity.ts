@@ -50,6 +50,19 @@ export class User {
   })
   buildingVerificationStatus: BuildingVerificationStatus;
 
+  // 레벨 시스템 관련 필드
+  @Column({ default: 0 })
+  activityScore: number; // 활동 점수
+
+  @Column({ default: 1 })
+  level: number; // 레벨 (1~6, 6은 ZIPPER 지기로 관리자가 직접 부여)
+
+  @Column({ nullable: true })
+  levelUpdatedAt: Date; // 레벨 업데이트 시간
+
+  @Column({ nullable: true })
+  lastActivityDate: Date; // 마지막 활동 날짜 (30일 이상 활동 유지 확인용)
+
   @CreateDateColumn()
   createdAt: Date;
 

@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { EventEmitterModule } from '@nestjs/event-emitter';
+import { ScheduleModule } from '@nestjs/schedule';
 import { DatabaseModule } from '@infrastructure/database/database.module';
 import { RedisModule } from '@infrastructure/cache/redis.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -14,6 +16,8 @@ import { NotificationModule } from './modules/notification/notification.module';
       isGlobal: true,
       envFilePath: '.env',
     }),
+    EventEmitterModule.forRoot(),
+    ScheduleModule.forRoot(),
     DatabaseModule,
     RedisModule,
     AuthModule,

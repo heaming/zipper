@@ -43,9 +43,15 @@ class ApiClient {
       
       if (!response.ok) {
         const error: ApiError = await response.json().catch(() => ({
-          message: '서버 오류가 발생했습니다.',
+          message: response.status === 401 ? '인증이 만료되었습니다. 다시 로그인해주세요.' : '서버 오류가 발생했습니다.',
           statusCode: response.status,
         }))
+        
+        // 401 Unauthorized 오류는 특별한 에러로 표시
+        if (response.status === 401) {
+          throw new Error(error.message || '인증이 만료되었습니다. 다시 로그인해주세요.')
+        }
+        
         throw new Error(error.message || '요청 실패')
       }
 
@@ -125,6 +131,18 @@ class ApiClient {
       email: string
       buildings: Array<{ id: string; name: string; nickname: string }>
     }>('/api/auth/profile')
+  }
+
+  async getLevel() {
+    return this.request<{
+      level: number
+      icon: string
+      name: string
+      color: string
+      activityScore: number
+      progress: number
+      remainingPoints: number
+    }>('/api/auth/level')
   }
 
   // Community APIs

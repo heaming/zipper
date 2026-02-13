@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, FindOptionsWhere } from 'typeorm';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Post, BoardType } from './domain/entities/post.entity';
 import { PostLike } from './domain/entities/post-like.entity';
 import { Comment } from './domain/entities/comment.entity';
@@ -17,6 +18,11 @@ import { ViewCountService } from './services/view-count.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { CreateCommentDto } from './dto/create-comment.dto';
+import {
+  PostCreatedEvent,
+  CommentCreatedEvent,
+  PostLikedEvent,
+} from '../auth/events/activity.events';
 
 @Injectable()
 export class CommunityService {
@@ -33,6 +39,7 @@ export class CommunityService {
     private userRepository: Repository<User>,
     private hotPostService: HotPostService,
     private viewCountService: ViewCountService,
+    private eventEmitter: EventEmitter2,
   ) {}
 
   async getPosts(
@@ -223,6 +230,9 @@ export class CommunityService {
 
     const savedPost = await this.postRepository.save(post);
 
+    // 활동 점수 이벤트 발행
+    this.eventEmitter.emit('post.created', new PostCreatedEvent(userIdNum));
+
     return {
       id: savedPost.id,
       title: savedPost.title,
@@ -305,6 +315,10 @@ export class CommunityService {
       await this.postLikeRepository.save(like);
       post.likeCount += 1;
       await this.postRepository.save(post);
+      
+      // 활동 점수 이벤트 발행 (게시글 작성자가 좋아요 받음)
+      this.eventEmitter.emit('post.liked', new PostLikedEvent(post.authorId));
+      
       return { isLiked: true, likeCount: post.likeCount };
     }
   }
@@ -415,6 +429,9 @@ export class CommunityService {
     // 댓글 수 증가
     post.commentCount += 1;
     await this.postRepository.save(post);
+
+    // 활동 점수 이벤트 발행
+    this.eventEmitter.emit('comment.created', new CommentCreatedEvent(userIdNum));
 
     // 작성자 닉네임 가져오기
     const author = await this.userRepository.findOne({

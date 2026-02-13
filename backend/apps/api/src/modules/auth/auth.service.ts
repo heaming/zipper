@@ -21,6 +21,7 @@ import { RedisCacheService } from './services/redis-cache.service';
 import { EmailService } from './services/email.service';
 import { IdCardProcessorService } from '@infrastructure/auth/services/id-card-processor.service';
 import { KakaoLocalService } from '../building/services/kakao-local.service';
+import { LevelService } from './services/level.service';
 import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
 import {
@@ -46,6 +47,7 @@ export class AuthService {
     private emailService: EmailService,
     private idCardProcessorService: IdCardProcessorService,
     private kakaoLocalService: KakaoLocalService,
+    private levelService: LevelService,
   ) {}
 
   async checkEmailExists(email: string): Promise<boolean> {
@@ -282,7 +284,7 @@ export class AuthService {
     );
 
     // 4. 100m 이내면 인증 성공
-    const isWithinRange = distance <= 0.1; // 100m
+    const isWithinRange = distance <= 0.2; // 200m
     
     this.logger.log(`GPS 인증 시도 - 사용자 ID: ${userId}, 건물 ID: ${building.id}, 거리: ${(distance * 1000).toFixed(2)}m, 결과: ${isWithinRange ? '성공' : '실패'}`);
 
@@ -307,6 +309,9 @@ export class AuthService {
         user.buildingVerificationStatus = BuildingVerificationStatus.VERIFIED;
         user.buildingId = dto.buildingId;
         await this.userRepository.save(user);
+        
+        // 건물 인증 완료 시 레벨 재계산
+        await this.levelService.recalculateLevel(userId);
       }
       await this.createMembership(userId, dto.buildingId);
     }
@@ -483,6 +488,7 @@ export class AuthService {
       nickname: user.nickname,
       buildings,
       buildingId: user.buildingId || (buildings.length > 0 ? buildings[0].id : null),
+      activityScore: user.activityScore || 0,
     };
   }
 

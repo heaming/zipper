@@ -3,9 +3,10 @@ import {
   NotFoundException,
   UnauthorizedException,
   ForbiddenException,
+  Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, FindOptionsWhere } from 'typeorm';
+import { Repository, FindOptionsWhere, IsNull } from 'typeorm';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Post, BoardType } from './domain/entities/post.entity';
 import { PostLike } from './domain/entities/post-like.entity';
@@ -26,6 +27,8 @@ import {
 
 @Injectable()
 export class CommunityService {
+  private readonly logger = new Logger(CommunityService.name);
+
   constructor(
     @InjectRepository(Post)
     private postRepository: Repository<Post>,
@@ -49,31 +52,82 @@ export class CommunityService {
     page: number = 1,
     limit: number = 20,
   ) {
+    this.logger.log(`[getPosts] Called with buildingId: ${buildingId}, userId: ${userId}, boardType: ${boardType}, page: ${page}, limit: ${limit}`);
+    
+    if (!buildingId) {
+      this.logger.error('[getPosts] buildingId is required');
+      throw new Error('buildingId is required');
+    }
+    
     const buildingIdNum = parseInt(buildingId, 10);
+    if (isNaN(buildingIdNum)) {
+      this.logger.error(`[getPosts] Invalid buildingId: ${buildingId}`);
+      throw new Error(`Invalid buildingId: ${buildingId}`);
+    }
+    
     const userIdNum = parseInt(userId, 10);
+    this.logger.log(`[getPosts] Parsed buildingId: ${buildingIdNum}, userId: ${userIdNum}`);
     
     // 멤버십 확인
     await this.verifyMembership(userIdNum, buildingIdNum);
+    this.logger.log(`[getPosts] Membership verified`);
 
-    const where: FindOptionsWhere<Post> = {
-      buildingId: buildingIdNum,
-    };
+    // QueryBuilder를 사용하여 명시적으로 buildingId 필터링
+    // buildingId를 명시적으로 숫자로 변환하여 비교
+    this.logger.log(`[getPosts] Starting query with buildingId: ${buildingIdNum}, userId: ${userIdNum}, boardType: ${boardType || 'all'}`);
+    
+    const queryBuilder = this.postRepository
+      .createQueryBuilder('post')
+      .where('post.buildingId = :buildingId', { buildingId: buildingIdNum })
+      .andWhere('post.deletedAt IS NULL');
 
     if (boardType) {
-      where.boardType = boardType;
+      queryBuilder.andWhere('post.boardType = :boardType', { boardType });
     }
 
-    const [posts, total] = await this.postRepository.findAndCount({
-      where,
-      order: { createdAt: 'DESC' },
-      skip: (page - 1) * limit,
-      take: limit,
-      relations: ['author'],
-    });
+    queryBuilder
+      .orderBy('post.createdAt', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit)
+      .leftJoinAndSelect('post.author', 'author');
+
+    // 디버깅: 생성된 SQL 쿼리 확인
+    const sql = queryBuilder.getSql();
+    const params = queryBuilder.getParameters();
+    this.logger.log(`[getPosts] SQL Query: ${sql}`);
+    this.logger.log(`[getPosts] Parameters: ${JSON.stringify(params)}`);
+
+    const [posts, total] = await queryBuilder.getManyAndCount();
+    
+    // 디버깅: 조회된 게시글의 buildingId 확인
+    this.logger.log(`[getPosts] Found ${posts.length} posts out of ${total} total`);
+    if (posts.length > 0) {
+      this.logger.log(`[getPosts] First few posts: ${JSON.stringify(posts.slice(0, 3).map(p => ({ id: p.id, buildingId: p.buildingId, title: p.title.substring(0, 20) })))}`);
+    }
+
+    // buildingId 검증: 모든 게시글이 요청한 buildingId와 일치하는지 확인
+    const invalidPosts = posts.filter(post => post.buildingId !== buildingIdNum);
+    if (invalidPosts.length > 0) {
+      this.logger.error(`[getPosts] Invalid buildingId detected! Requested: ${buildingIdNum}, Found posts with buildingIds: ${JSON.stringify(invalidPosts.map(p => ({ id: p.id, buildingId: p.buildingId })))}`);
+      // 잘못된 buildingId를 가진 게시글 제거
+      const validPosts = posts.filter(post => post.buildingId === buildingIdNum);
+      return {
+        posts: [],
+        total: validPosts.length,
+        page,
+        limit,
+      };
+    }
 
     // 작성자 닉네임 조회
     const postsWithNicknames = await Promise.all(
       posts.map(async (post) => {
+        // buildingId 검증
+        if (post.buildingId !== buildingIdNum) {
+          this.logger.error(`[getPosts] Post ${post.id} has wrong buildingId: ${post.buildingId}, expected: ${buildingIdNum}`);
+          return null;
+        }
+
         const author = await this.userRepository.findOne({
           where: { id: post.authorId },
         });
@@ -95,6 +149,7 @@ export class CommunityService {
             nickname: author?.nickname || '익명',
           },
           boardType: post.boardType,
+          buildingId: post.buildingId, // 디버깅을 위해 buildingId도 반환
           likeCount: post.likeCount,
           commentCount: post.commentCount,
           viewCount: post.viewCount,
@@ -104,9 +159,12 @@ export class CommunityService {
       }),
     );
 
+    // null 값 제거 (buildingId가 일치하지 않는 게시글)
+    const validPosts = postsWithNicknames.filter(post => post !== null);
+
     return {
-      posts: postsWithNicknames,
-      total,
+      posts: validPosts,
+      total: validPosts.length,
       page,
       limit,
     };
@@ -150,16 +208,33 @@ export class CommunityService {
 
   async getPostById(postId: string, userId: string) {
     const postIdNum = parseInt(postId, 10);
+    if (isNaN(postIdNum)) {
+      throw new NotFoundException('잘못된 게시글 ID입니다.');
+    }
+    
     const userIdNum = parseInt(userId, 10);
     
-    const post = await this.postRepository.findOne({
-      where: { id: postIdNum },
-      relations: ['author', 'building'],
-    });
+    // QueryBuilder를 사용하여 명시적으로 ID로 조회
+    const post = await this.postRepository
+      .createQueryBuilder('post')
+      .where('post.id = :postId', { postId: postIdNum })
+      .andWhere('post.deletedAt IS NULL')
+      .leftJoinAndSelect('post.author', 'author')
+      .leftJoinAndSelect('post.building', 'building')
+      .getOne();
 
     if (!post) {
       throw new NotFoundException('게시글을 찾을 수 없습니다.');
     }
+
+    // 디버깅: 실제 조회된 데이터 확인
+    this.logger.log(`[getPostById] Requested postId: ${postIdNum}, Found post: ${JSON.stringify({
+      id: post.id,
+      title: post.title,
+      buildingId: post.buildingId,
+      authorId: post.authorId,
+      boardType: post.boardType,
+    })}`);
 
     // 인증 상태 확인: VERIFIED가 아니면 상세 조회 불가
     const user = await this.userRepository.findOne({
@@ -194,6 +269,12 @@ export class CommunityService {
       },
     });
 
+    // 응답 데이터 검증
+    if (post.id !== postIdNum) {
+      this.logger.error(`[getPostById] Post ID mismatch! Requested: ${postIdNum}, Found: ${post.id}`);
+      throw new NotFoundException('게시글을 찾을 수 없습니다.');
+    }
+
     return {
       id: post.id,
       title: post.title,
@@ -204,6 +285,7 @@ export class CommunityService {
         nickname: author?.nickname || '익명',
       },
       boardType: post.boardType,
+      buildingId: post.buildingId, // 디버깅을 위해 buildingId도 반환
       likeCount: post.likeCount,
       commentCount: post.commentCount,
       viewCount: post.viewCount,
@@ -211,6 +293,33 @@ export class CommunityService {
       isHot: post.isHot,
       createdAt: post.createdAt,
       updatedAt: post.updatedAt,
+    };
+  }
+
+  async incrementView(postId: string, userId: string) {
+    const postIdNum = parseInt(postId, 10);
+    const userIdNum = parseInt(userId, 10);
+    
+    const post = await this.postRepository.findOne({
+      where: { id: postIdNum, deletedAt: IsNull() },
+      withDeleted: false,
+    });
+
+    if (!post) {
+      throw new NotFoundException('게시글을 찾을 수 없습니다.');
+    }
+
+    await this.verifyMembership(userIdNum, post.buildingId);
+
+    // 조회수 증가 (Redis를 사용한 중복 방지)
+    const canIncrement = await this.viewCountService.canIncrementView(postIdNum, userIdNum);
+    if (canIncrement) {
+      post.viewCount += 1;
+      await this.postRepository.save(post);
+    }
+
+    return {
+      viewCount: post.viewCount,
     };
   }
 
@@ -245,7 +354,8 @@ export class CommunityService {
     const userIdNum = parseInt(userId, 10);
     
     const post = await this.postRepository.findOne({
-      where: { id: postIdNum },
+      where: { id: postIdNum, deletedAt: IsNull() },
+      withDeleted: false,
     });
 
     if (!post) {
@@ -273,7 +383,8 @@ export class CommunityService {
     const userIdNum = parseInt(userId, 10);
     
     const post = await this.postRepository.findOne({
-      where: { id: postIdNum },
+      where: { id: postIdNum, deletedAt: IsNull() },
+      withDeleted: false,
     });
 
     if (!post) {
@@ -294,7 +405,8 @@ export class CommunityService {
     const userIdNum = parseInt(userId, 10);
     
     const post = await this.postRepository.findOne({
-      where: { id: postIdNum },
+      where: { id: postIdNum, deletedAt: IsNull() },
+      withDeleted: false,
     });
 
     if (!post) {
@@ -328,7 +440,8 @@ export class CommunityService {
     const userIdNum = parseInt(userId, 10);
     
     const post = await this.postRepository.findOne({
-      where: { id: postIdNum },
+      where: { id: postIdNum, deletedAt: IsNull() },
+      withDeleted: false,
     });
 
     if (!post) {
@@ -336,11 +449,12 @@ export class CommunityService {
     }
 
     const [comments, total] = await this.commentRepository.findAndCount({
-      where: { postId: postIdNum, parentCommentId: null },
+      where: { postId: postIdNum, parentCommentId: null, deletedAt: IsNull() },
       order: { createdAt: 'ASC' },
       skip: (page - 1) * limit,
       take: limit,
       relations: ['author'],
+      withDeleted: false,
     });
 
     const commentsWithReplies = await Promise.all(
@@ -356,9 +470,10 @@ export class CommunityService {
 
         // 대댓글 조회
         const replies = await this.commentRepository.find({
-          where: { parentCommentId: comment.id },
+          where: { parentCommentId: comment.id, deletedAt: IsNull() },
           order: { createdAt: 'ASC' },
           relations: ['author'],
+          withDeleted: false,
         });
 
         const repliesWithNicknames = await Promise.all(
@@ -408,7 +523,8 @@ export class CommunityService {
     const userIdNum = parseInt(userId, 10);
     
     const post = await this.postRepository.findOne({
-      where: { id: postIdNum },
+      where: { id: postIdNum, deletedAt: IsNull() },
+      withDeleted: false,
     });
 
     if (!post) {
@@ -453,7 +569,8 @@ export class CommunityService {
     const userIdNum = parseInt(userId, 10);
     
     const comment = await this.commentRepository.findOne({
-      where: { id: commentIdNum },
+      where: { id: commentIdNum, deletedAt: IsNull() },
+      withDeleted: false,
     });
 
     if (!comment) {
@@ -478,7 +595,8 @@ export class CommunityService {
     const userIdNum = parseInt(userId, 10);
     
     const comment = await this.commentRepository.findOne({
-      where: { id: commentIdNum },
+      where: { id: commentIdNum, deletedAt: IsNull() },
+      withDeleted: false,
     });
 
     if (!comment) {
@@ -493,7 +611,8 @@ export class CommunityService {
 
     // 댓글 수 감소
     const post = await this.postRepository.findOne({
-      where: { id: comment.postId },
+      where: { id: comment.postId, deletedAt: IsNull() },
+      withDeleted: false,
     });
     if (post) {
       post.commentCount = Math.max(0, post.commentCount - 1);
@@ -512,11 +631,12 @@ export class CommunityService {
     const userIdNum = parseInt(userId, 10);
 
     const [posts, total] = await this.postRepository.findAndCount({
-      where: { authorId: userIdNum },
+      where: { authorId: userIdNum, deletedAt: IsNull() },
       order: { createdAt: 'DESC' },
       skip: (page - 1) * limit,
       take: limit,
       relations: ['author'],
+      withDeleted: false,
     });
 
     const postsWithNicknames = await Promise.all(
@@ -556,17 +676,19 @@ export class CommunityService {
     const userIdNum = parseInt(userId, 10);
 
     const [comments, total] = await this.commentRepository.findAndCount({
-      where: { authorId: userIdNum },
+      where: { authorId: userIdNum, deletedAt: IsNull() },
       order: { createdAt: 'DESC' },
       skip: (page - 1) * limit,
       take: limit,
       relations: ['post'],
+      withDeleted: false,
     });
 
     const commentsWithPostInfo = await Promise.all(
       comments.map(async (comment) => {
         const post = await this.postRepository.findOne({
-          where: { id: comment.postId },
+          where: { id: comment.postId, deletedAt: IsNull() },
+          withDeleted: false,
         });
 
         const author = await this.userRepository.findOne({
@@ -610,8 +732,9 @@ export class CommunityService {
     const postsWithNicknames = await Promise.all(
       likes.map(async (like) => {
         const post = await this.postRepository.findOne({
-          where: { id: like.postId },
+          where: { id: like.postId, deletedAt: IsNull() },
           relations: ['author'],
+          withDeleted: false,
         });
 
         if (!post) {

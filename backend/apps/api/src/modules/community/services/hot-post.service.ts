@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, LessThan } from 'typeorm';
+import { Repository, LessThan, IsNull } from 'typeorm';
 import { Post } from '../domain/entities/post.entity';
 
 /**
@@ -54,8 +54,10 @@ export class HotPostService {
     const posts = await this.postRepository.find({
       where: {
         buildingId,
+        deletedAt: IsNull(),
       },
       relations: ['comments', 'likes'],
+      withDeleted: false,
     });
 
     // 24시간 이내 게시물만 필터링
@@ -83,6 +85,7 @@ export class HotPostService {
       where: {
         buildingId,
         isHot: true,
+        deletedAt: IsNull(),
       },
       order: {
         hotScore: 'DESC',
@@ -90,6 +93,7 @@ export class HotPostService {
       },
       take: limit,
       relations: ['author', 'building'],
+      withDeleted: false,
     });
   }
 }

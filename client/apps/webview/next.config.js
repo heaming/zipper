@@ -12,9 +12,10 @@ const nextConfig = {
   
   // 환경변수
   env: {
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'https://zipper-backend-fwm5.onrender.com' || 'http://localhost:3000',
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000',
+    // || 'https://zipper-backend-fwm5.onrender.com'
   },
-  
+
   // WebView에서 사용하지 않을 기능 비활성화
   // swcMinify: true,
 

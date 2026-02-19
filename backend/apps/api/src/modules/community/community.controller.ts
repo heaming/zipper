@@ -22,23 +22,6 @@ import { BoardType } from './domain/entities/post.entity';
 export class CommunityController {
   constructor(private readonly communityService: CommunityService) {}
 
-  @Get('posts')
-  async getPosts(
-    @CurrentUser() user: any,
-    @Query('buildingId') buildingId: string,
-    @Query('boardType') boardType?: BoardType,
-    @Query('page') page: string = '1',
-    @Query('limit') limit: string = '20',
-  ) {
-    return this.communityService.getPosts(
-      buildingId,
-      user.id,
-      boardType,
-      parseInt(page),
-      parseInt(limit),
-    );
-  }
-
   @Get('posts/hot')
   async getHotPosts(
     @Query('buildingId') buildingId: string,
@@ -53,6 +36,34 @@ export class CommunityController {
     @CurrentUser() user: any,
   ) {
     return this.communityService.getPostById(id, user.id);
+  }
+
+  @Get('posts')
+  async getPosts(
+    @CurrentUser() user: any,
+    @Query('buildingId') buildingId: string,
+    @Query('boardType') boardType?: BoardType,
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '20',
+  ) {
+    if (!buildingId) {
+      throw new Error('buildingId is required');
+    }
+    return this.communityService.getPosts(
+      buildingId,
+      user.id,
+      boardType,
+      parseInt(page),
+      parseInt(limit),
+    );
+  }
+
+  @Post('posts/:id/view')
+  async incrementView(
+    @Param('id') id: string,
+    @CurrentUser() user: any,
+  ) {
+    return this.communityService.incrementView(id, user.id);
   }
 
   @Post('posts')

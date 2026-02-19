@@ -11,6 +11,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { multerConfig } from '../../common/config/multer.config';
 import { AuthService } from './auth.service';
+import { LevelService } from './services/level.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { Public } from '../../common/decorators/public.decorator';
@@ -24,7 +25,10 @@ import {
 
 @Controller('api/auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly levelService: LevelService,
+  ) {}
 
   @Public()
   @Post('check-email')
@@ -140,5 +144,37 @@ export class AuthController {
       dto.buildingId,
       dto.nickname,
     );
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('level')
+  async getLevel(@CurrentUser() user: any) {
+    const levelInfo = await this.levelService.getUserLevelInfo(user.id);
+    const profile = await this.authService.getProfile(user.id);
+    const progress = await this.levelService.getUserLevelProgress(user.id);
+    
+    return {
+      level: levelInfo.level,
+      icon: levelInfo.icon,
+      name: levelInfo.name,
+      color: levelInfo.color,
+      activityScore: profile.activityScore || 0,
+      progress: progress.progress,
+      remainingPoints: progress.remainingPoints,
+    };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('level/recalculate')
+  async recalculateLevel(@CurrentUser() user: any) {
+    await this.levelService.recalculateLevel(user.id);
+    const levelInfo = await this.levelService.getUserLevelInfo(user.id);
+    
+    return {
+      level: levelInfo.level,
+      icon: levelInfo.icon,
+      name: levelInfo.name,
+      color: levelInfo.color,
+    };
   }
 }

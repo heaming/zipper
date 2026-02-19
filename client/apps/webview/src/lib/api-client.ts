@@ -43,9 +43,15 @@ class ApiClient {
       
       if (!response.ok) {
         const error: ApiError = await response.json().catch(() => ({
-          message: '서버 오류가 발생했습니다.',
+          message: response.status === 401 ? '인증이 만료되었습니다. 다시 로그인해주세요.' : '서버 오류가 발생했습니다.',
           statusCode: response.status,
         }))
+        
+        // 401 Unauthorized 오류는 특별한 에러로 표시
+        if (response.status === 401) {
+          throw new Error(error.message || '인증이 만료되었습니다. 다시 로그인해주세요.')
+        }
+        
         throw new Error(error.message || '요청 실패')
       }
 
@@ -106,6 +112,7 @@ class ApiClient {
         phoneNumber?: string
         buildingId?: number
         buildingName?: string
+        bname?: string
         dong?: string
         ho?: string
         buildingVerificationStatus: 'PENDING' | 'VERIFIED' | 'REJECTED'
@@ -124,6 +131,18 @@ class ApiClient {
       email: string
       buildings: Array<{ id: string; name: string; nickname: string }>
     }>('/api/auth/profile')
+  }
+
+  async getLevel() {
+    return this.request<{
+      level: number
+      icon: string
+      name: string
+      color: string
+      activityScore: number
+      progress: number
+      remainingPoints: number
+    }>('/api/auth/level')
   }
 
   // Community APIs
@@ -201,6 +220,34 @@ class ApiClient {
     })
   }
 
+  // Activity APIs (내 활동 내역)
+  async getMyPosts(page: number = 1, limit: number = 20) {
+    return this.request<{
+      posts: any[]
+      total: number
+      page: number
+      limit: number
+    }>(`/api/community/activity/posts?page=${page}&limit=${limit}`)
+  }
+
+  async getMyComments(page: number = 1, limit: number = 20) {
+    return this.request<{
+      comments: any[]
+      total: number
+      page: number
+      limit: number
+    }>(`/api/community/activity/comments?page=${page}&limit=${limit}`)
+  }
+
+  async getMyLikedPosts(page: number = 1, limit: number = 20) {
+    return this.request<{
+      posts: any[]
+      total: number
+      page: number
+      limit: number
+    }>(`/api/community/activity/likes?page=${page}&limit=${limit}`)
+  }
+
   // Building APIs
   async searchBuildings(keyword: string) {
     return this.request<{ buildings: Array<{ id: number; name: string; address: string; buildingType?: string }> }>(
@@ -225,6 +272,22 @@ class ApiClient {
 
   async getBuildings() {
     return this.request<any[]>('/buildings')
+  }
+
+  async getBuildingById(buildingId: number) {
+    return this.request<{
+      id: number
+      name: string
+      roadAddress?: string
+      jibunAddress?: string
+      sido?: string
+      sigungu?: string
+      bname?: string
+      buildingType?: string
+      totalHouseholds?: number
+      memberCount: number
+      isMember: boolean
+    }>(`/api/buildings/${buildingId}`)
   }
 
   // Email Verification APIs

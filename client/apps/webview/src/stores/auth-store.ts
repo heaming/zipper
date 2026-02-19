@@ -15,6 +15,7 @@ interface User {
   phoneNumber?: string
   buildingId?: string
   buildingName?: string
+  bname?: string // 법정동명
   dong?: string
   ho?: string
   isBuildingVerified?: boolean

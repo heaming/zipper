@@ -21,6 +21,11 @@ function BottomNav() {
   if (pathname?.startsWith('/community/') && pathname !== '/community') {
     return null
   }
+  
+  // 내 활동 내역 페이지에서는 네비게이션 숨김
+  if (pathname === '/profile/activity') {
+    return null
+  }
 
   const navItems = [
     { href: '/home', icon: Home, label: '홈' },

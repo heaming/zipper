@@ -7,6 +7,7 @@ import { ViewCountService } from './services/view-count.service';
 import { Post } from './domain/entities/post.entity';
 import { PostLike } from './domain/entities/post-like.entity';
 import { Comment } from './domain/entities/comment.entity';
+import { Report } from './domain/entities/report.entity';
 import { BuildingMembership } from '../building/domain/entities/building-membership.entity';
 import { User } from '../auth/domain/entities/user.entity';
 import { Building } from '../building/domain/entities/building.entity';
@@ -17,6 +18,7 @@ import { Building } from '../building/domain/entities/building.entity';
       Post,
       PostLike,
       Comment,
+      Report,
       BuildingMembership,
       User,
       Building,

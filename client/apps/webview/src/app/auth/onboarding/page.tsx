@@ -55,8 +55,24 @@ export default function OnboardingPage() {
             })
 
             if (result.status === 'VERIFIED') {
-              // 사용자 정보 업데이트
-              if (user) {
+              // 사용자 정보 업데이트 (building 정보도 함께 가져와서 bname 포함)
+              if (user && user.buildingId) {
+                try {
+                  const building = await apiClient.getBuildingById(parseInt(String(user.buildingId)))
+                  setUser({
+                    ...user,
+                    buildingVerificationStatus: 'VERIFIED',
+                    buildingName: building.name,
+                    bname: building.bname,
+                  })
+                } catch (err) {
+                  // building 정보를 가져오지 못해도 인증 상태만 업데이트
+                  setUser({
+                    ...user,
+                    buildingVerificationStatus: 'VERIFIED',
+                  })
+                }
+              } else if (user) {
                 setUser({
                   ...user,
                   buildingVerificationStatus: 'VERIFIED',

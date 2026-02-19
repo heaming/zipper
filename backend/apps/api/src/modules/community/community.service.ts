@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, FindOptionsWhere } from 'typeorm';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Post, BoardType } from './domain/entities/post.entity';
 import { PostLike } from './domain/entities/post-like.entity';
 import { Comment } from './domain/entities/comment.entity';
@@ -17,6 +18,11 @@ import { ViewCountService } from './services/view-count.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { CreateCommentDto } from './dto/create-comment.dto';
+import {
+  PostCreatedEvent,
+  CommentCreatedEvent,
+  PostLikedEvent,
+} from '../auth/events/activity.events';
 
 @Injectable()
 export class CommunityService {
@@ -33,6 +39,7 @@ export class CommunityService {
     private userRepository: Repository<User>,
     private hotPostService: HotPostService,
     private viewCountService: ViewCountService,
+    private eventEmitter: EventEmitter2,
   ) {}
 
   async getPosts(
@@ -223,6 +230,9 @@ export class CommunityService {
 
     const savedPost = await this.postRepository.save(post);
 
+    // 활동 점수 이벤트 발행
+    this.eventEmitter.emit('post.created', new PostCreatedEvent(userIdNum));
+
     return {
       id: savedPost.id,
       title: savedPost.title,
@@ -305,6 +315,10 @@ export class CommunityService {
       await this.postLikeRepository.save(like);
       post.likeCount += 1;
       await this.postRepository.save(post);
+      
+      // 활동 점수 이벤트 발행 (게시글 작성자가 좋아요 받음)
+      this.eventEmitter.emit('post.liked', new PostLikedEvent(post.authorId));
+      
       return { isLiked: true, likeCount: post.likeCount };
     }
   }
@@ -416,6 +430,9 @@ export class CommunityService {
     post.commentCount += 1;
     await this.postRepository.save(post);
 
+    // 활동 점수 이벤트 발행
+    this.eventEmitter.emit('comment.created', new CommentCreatedEvent(userIdNum));
+
     // 작성자 닉네임 가져오기
     const author = await this.userRepository.findOne({
       where: { id: userIdNum },
@@ -489,6 +506,150 @@ export class CommunityService {
   async toggleCommentLike(commentId: string, userId: string) {
     // 댓글 좋아요 기능은 구현되지 않음
     throw new NotFoundException('댓글 좋아요 기능은 지원하지 않습니다.');
+  }
+
+  async getMyPosts(userId: string, page: number = 1, limit: number = 20) {
+    const userIdNum = parseInt(userId, 10);
+
+    const [posts, total] = await this.postRepository.findAndCount({
+      where: { authorId: userIdNum },
+      order: { createdAt: 'DESC' },
+      skip: (page - 1) * limit,
+      take: limit,
+      relations: ['author'],
+    });
+
+    const postsWithNicknames = await Promise.all(
+      posts.map(async (post) => {
+        const author = await this.userRepository.findOne({
+          where: { id: post.authorId },
+        });
+
+        return {
+          id: post.id,
+          title: post.title,
+          content: post.content,
+          imageUrls: post.imageUrls || [],
+          author: {
+            id: post.authorId,
+            nickname: author?.nickname || '익명',
+          },
+          boardType: post.boardType,
+          likeCount: post.likeCount,
+          commentCount: post.commentCount,
+          viewCount: post.viewCount,
+          isHot: post.isHot,
+          createdAt: post.createdAt,
+        };
+      }),
+    );
+
+    return {
+      posts: postsWithNicknames,
+      total,
+      page,
+      limit,
+    };
+  }
+
+  async getMyComments(userId: string, page: number = 1, limit: number = 20) {
+    const userIdNum = parseInt(userId, 10);
+
+    const [comments, total] = await this.commentRepository.findAndCount({
+      where: { authorId: userIdNum },
+      order: { createdAt: 'DESC' },
+      skip: (page - 1) * limit,
+      take: limit,
+      relations: ['post'],
+    });
+
+    const commentsWithPostInfo = await Promise.all(
+      comments.map(async (comment) => {
+        const post = await this.postRepository.findOne({
+          where: { id: comment.postId },
+        });
+
+        const author = await this.userRepository.findOne({
+          where: { id: comment.authorId },
+        });
+
+        return {
+          id: comment.id,
+          content: comment.content,
+          postId: comment.postId,
+          postTitle: post?.title || '삭제된 게시글',
+          boardType: post?.boardType || 'chat',
+          author: {
+            id: comment.authorId,
+            nickname: author?.nickname || '익명',
+          },
+          createdAt: comment.createdAt,
+        };
+      }),
+    );
+
+    return {
+      comments: commentsWithPostInfo,
+      total,
+      page,
+      limit,
+    };
+  }
+
+  async getMyLikedPosts(userId: string, page: number = 1, limit: number = 20) {
+    const userIdNum = parseInt(userId, 10);
+
+    const [likes, total] = await this.postLikeRepository.findAndCount({
+      where: { userId: userIdNum },
+      order: { createdAt: 'DESC' },
+      skip: (page - 1) * limit,
+      take: limit,
+      relations: ['post'],
+    });
+
+    const postsWithNicknames = await Promise.all(
+      likes.map(async (like) => {
+        const post = await this.postRepository.findOne({
+          where: { id: like.postId },
+          relations: ['author'],
+        });
+
+        if (!post) {
+          return null;
+        }
+
+        const author = await this.userRepository.findOne({
+          where: { id: post.authorId },
+        });
+
+        return {
+          id: post.id,
+          title: post.title,
+          content: post.content,
+          imageUrls: post.imageUrls || [],
+          author: {
+            id: post.authorId,
+            nickname: author?.nickname || '익명',
+          },
+          boardType: post.boardType,
+          likeCount: post.likeCount,
+          commentCount: post.commentCount,
+          viewCount: post.viewCount,
+          isHot: post.isHot,
+          createdAt: post.createdAt,
+        };
+      }),
+    );
+
+    // null 값 제거 (삭제된 게시글)
+    const validPosts = postsWithNicknames.filter((post) => post !== null);
+
+    return {
+      posts: validPosts,
+      total,
+      page,
+      limit,
+    };
   }
 
   private async verifyMembership(userId: number, buildingId: number) {

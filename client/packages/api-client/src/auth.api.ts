@@ -13,11 +13,11 @@ export interface LoginResponse {
   accessToken: string
   refreshToken: string
   user: {
-    id: string
+    id: number
     email: string
     nickname?: string
     phoneNumber?: string
-    buildingId?: string
+    buildingId?: number
     buildingName?: string
     dong?: string
     ho?: string
@@ -40,7 +40,7 @@ export class AuthApi {
     return this.client.post('/api/auth/login', data)
   }
 
-  async signup(data: SignupRequest): Promise<{ userId: string; message: string }> {
+  async signup(data: SignupRequest): Promise<{ userId: number; message: string }> {
     return this.client.post('/api/auth/signup', data)
   }
 
@@ -49,7 +49,7 @@ export class AuthApi {
   }
 
   async verifyResidence(data: {
-    buildingId: string
+    buildingId: number
     method: 'GPS' | 'INVITE_CODE' | 'PHOTO'
     latitude?: number
     longitude?: number

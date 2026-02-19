@@ -516,8 +516,6 @@ export default function SignupPage() {
         // API 응답을 User 타입에 맞게 변환
         const user = {
           ...loginResponse.user,
-          id: String(loginResponse.user.id),
-          buildingId: loginResponse.user.buildingId ? String(loginResponse.user.buildingId) : undefined,
         }
         login(user, loginResponse.accessToken)
         

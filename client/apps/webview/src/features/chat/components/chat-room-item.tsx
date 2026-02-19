@@ -4,7 +4,7 @@ import { Card, CardContent, Badge } from '@ui/index'
 import { formatRelativeTime } from '@/lib/utils'
 
 interface ChatRoomItemProps {
-  id: string
+  id: number
   roomType: 'BUILDING' | 'TOPIC'
   topicName?: string
   lastMessage?: string

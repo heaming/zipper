@@ -9,11 +9,11 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
 interface User {
-  id: string
+  id: number
   email: string
   nickname?: string
   phoneNumber?: string
-  buildingId?: string
+  buildingId?: number
   buildingName?: string
   bname?: string // 법정동명
   dong?: string

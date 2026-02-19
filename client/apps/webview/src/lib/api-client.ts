@@ -95,7 +95,7 @@ class ApiClient {
     dong?: string
     ho?: string
   }) {
-    return this.request<{ userId: string; buildingId: number; message: string }>('/api/auth/signup', {
+    return this.request<{ userId: number; buildingId: number; message: string }>('/api/auth/signup', {
       method: 'POST',
       body: JSON.stringify(data),
     })
@@ -106,7 +106,7 @@ class ApiClient {
       accessToken: string
       refreshToken: string
       user: {
-        id: string
+        id: number
         email: string
         nickname: string
         phoneNumber?: string
@@ -127,9 +127,9 @@ class ApiClient {
 
   async getProfile() {
     return this.request<{
-      id: string
+      id: number
       email: string
-      buildings: Array<{ id: string; name: string; nickname: string }>
+      buildings: Array<{ id: number; name: string; nickname: string }>
     }>('/api/auth/profile')
   }
 
@@ -146,13 +146,13 @@ class ApiClient {
   }
 
   // Community APIs
-  async getPosts(buildingId?: string, boardType?: string, limit: number = 20, page: number = 1) {
+  async getPosts(buildingId?: number, boardType?: string, limit: number = 20, page: number = 1) {
     if (!buildingId) {
       throw new Error('buildingId is required')
     }
     
     const params = new URLSearchParams()
-    params.append('buildingId', buildingId)
+    params.append('buildingId', buildingId.toString())
     
     // Map frontend CommunityTag to backend BoardType
     if (boardType && boardType !== 'all' && typeof boardType === 'string') {

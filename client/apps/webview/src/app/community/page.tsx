@@ -132,7 +132,7 @@ export default function CommunityPage() {
     try {
       setLoading(true)
       const boardType = activeTag === CommunityTag.ALL ? undefined : activeTag
-      const data = await apiClient.getPosts(String(buildingId), boardType, 50)
+      const data = await apiClient.getPosts(buildingId, boardType, 50)
       setPosts(data.posts || data)
     } catch (error) {
       console.error('Failed to fetch posts:', error)

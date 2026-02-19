@@ -3,12 +3,12 @@
 import { create } from 'zustand'
 
 interface Post {
-  id: string
+  id: number
   title: string
   content: string
-  authorId: string
+  authorId: number
   authorNickname: string
-  buildingId: string
+  buildingId: number
   boardType: 'FREE' | 'DELIVERY' | 'LIFESTYLE'
   likeCount: number
   commentCount: number

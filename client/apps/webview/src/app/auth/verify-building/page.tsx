@@ -5,7 +5,7 @@
 
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button, Card, CardContent, BottomSheet, BottomSheetContent } from '@ui/index'
 import { apiClient } from '@/lib/api-client'
@@ -14,7 +14,7 @@ import { useAuthStore } from '@/stores/auth-store'
 
 type VerificationType = 'GPS' | 'POST_MAIL' | 'ID_CARD' | null
 
-export default function VerifyBuildingPage() {
+function VerifyBuildingContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const method = searchParams.get('method') as VerificationType
@@ -253,5 +253,17 @@ export default function VerifyBuildingPage() {
         </div>
       </main>
     </div>
+  )
+}
+
+export default function VerifyBuildingPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex flex-col items-center justify-center min-h-screen bg-background">
+        <div className="text-text-secondary">로딩 중...</div>
+      </div>
+    }>
+      <VerifyBuildingContent />
+    </Suspense>
   )
 }

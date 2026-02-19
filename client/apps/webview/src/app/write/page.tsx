@@ -6,7 +6,7 @@
 
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Card, CardContent, Button } from '@ui/index'
 import { CommunityTag, TAG_LABELS, TAG_ICONS } from '@zipper/models/src/community'
@@ -20,7 +20,7 @@ const writeOptions = [
   { tag: CommunityTag.MARKET, description: '상업 광고 (권한 필요)' },
 ]
 
-export default function WritePage() {
+function WritePageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const tagParam = searchParams.get('tag')
@@ -232,5 +232,17 @@ export default function WritePage() {
         </Card>
       </main>
     </div>
+  )
+}
+
+export default function WritePage() {
+  return (
+    <Suspense fallback={
+      <div className="flex flex-col items-center justify-center min-h-screen bg-background">
+        <div className="text-text-secondary">로딩 중...</div>
+      </div>
+    }>
+      <WritePageContent />
+    </Suspense>
   )
 }

@@ -50,7 +50,7 @@ export const TOGATHER_CATEGORY_LABELS: Record<TogatherCategory, string> = {
  * 게시글 타입
  */
 export interface CommunityPost {
-  id: string
+  id: number
   tag: CommunityTag
   title: string
   content: string
@@ -64,5 +64,5 @@ export interface CommunityPost {
   togatherCategory?: TogatherCategory
   quantity?: number
   deadline?: string
-  chatRoomId?: string
+  chatRoomId?: number
 }

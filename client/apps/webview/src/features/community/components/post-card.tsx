@@ -4,7 +4,7 @@ import { Card, CardContent, Badge, Divider } from '@ui/index'
 import { formatRelativeTime, formatNumber } from '@/lib/utils'
 
 interface PostCardProps {
-  id: string
+  id: number
   title: string
   content: string
   authorNickname: string

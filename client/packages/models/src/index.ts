@@ -9,11 +9,11 @@ export * from './community'
 export type BuildingVerificationStatus = 'PENDING' | 'VERIFIED' | 'REJECTED'
 
 export interface User {
-  id: string
+  id: number
   email: string
   nickname?: string
   phoneNumber?: string
-  buildingId?: string
+  buildingId?: number
   buildingName?: string
   dong?: string
   ho?: string
@@ -29,7 +29,7 @@ export interface AuthUser extends User {
 
 // Building Models
 export interface Building {
-  id: string
+  id: number
   name: string
   address: string
   addressDetail?: string
@@ -40,12 +40,12 @@ export interface Building {
 
 // Post Models
 export interface Post {
-  id: string
+  id: number
   title: string
   content: string
-  authorId: string
+  authorId: number
   authorNickname: string
-  buildingId: string
+  buildingId: number
   boardType: 'FREE' | 'DELIVERY' | 'LIFESTYLE'
   imageUrls: string[]
   likeCount: number
@@ -57,32 +57,32 @@ export interface Post {
 }
 
 export interface Comment {
-  id: string
-  postId: string
-  authorId: string
+  id: number
+  postId: number
+  authorId: number
   authorNickname: string
   content: string
   likeCount: number
-  parentId?: string
+  parentId?: number
   createdAt: string
 }
 
 // Chat Models
 export interface ChatRoom {
-  id: string
-  buildingId: string
+  id: number
+  buildingId: number
   roomType: 'BUILDING' | 'TOPIC'
   topicName?: string
-  postId?: string
+  postId?: number
   lastMessage?: string
   lastMessageAt?: string
   unreadCount?: number
 }
 
 export interface ChatMessage {
-  id: string
-  roomId: string
-  senderId: string
+  id: number
+  roomId: number
+  senderId: number
   senderNickname: string
   content: string
   messageType: 'TEXT' | 'IMAGE'
@@ -92,14 +92,14 @@ export interface ChatMessage {
 
 // Notification Models
 export interface Notification {
-  id: string
-  userId: string
+  id: number
+  userId: number
   type: 'COMMENT' | 'REPLY' | 'MENTION' | 'HOT_POST' | 'CHAT_MENTION'
   title: string
   content: string
   isRead: boolean
-  relatedPostId?: string
-  relatedCommentId?: string
-  relatedChatRoomId?: string
+  relatedPostId?: number
+  relatedCommentId?: number
+  relatedChatRoomId?: number
   createdAt: string
 }

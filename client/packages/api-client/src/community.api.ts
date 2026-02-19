@@ -5,12 +5,12 @@ import type { ApiClient } from './client'
  */
 
 export interface Post {
-  id: string
+  id: number
   title: string
   content: string
-  authorId: string
+  authorId: number
   authorNickname: string
-  buildingId: string
+  buildingId: number
   boardType: 'FREE' | 'DELIVERY' | 'LIFESTYLE'
   imageUrls: string[]
   likeCount: number
@@ -32,7 +32,7 @@ export class CommunityApi {
   constructor(private client: ApiClient) {}
 
   async getPosts(params: {
-    buildingId: string
+    buildingId: number
     boardType?: 'FREE' | 'DELIVERY' | 'LIFESTYLE'
     page?: number
     limit?: number
@@ -41,23 +41,23 @@ export class CommunityApi {
     return this.client.get(`/api/community/posts?${query}`)
   }
 
-  async getHotPosts(buildingId: string): Promise<Post[]> {
+  async getHotPosts(buildingId: number): Promise<Post[]> {
     return this.client.get(`/api/community/posts/hot?buildingId=${buildingId}`)
   }
 
-  async getPost(postId: string): Promise<Post> {
+  async getPost(postId: number): Promise<Post> {
     return this.client.get(`/api/community/posts/${postId}`)
   }
 
-  async createPost(data: CreatePostRequest): Promise<{ id: string }> {
+  async createPost(data: CreatePostRequest): Promise<{ id: number }> {
     return this.client.post('/api/community/posts', data)
   }
 
-  async likePost(postId: string): Promise<void> {
+  async likePost(postId: number): Promise<void> {
     return this.client.post(`/api/community/posts/${postId}/like`)
   }
 
-  async unlikePost(postId: string): Promise<void> {
+  async unlikePost(postId: number): Promise<void> {
     return this.client.delete(`/api/community/posts/${postId}/like`)
   }
 }

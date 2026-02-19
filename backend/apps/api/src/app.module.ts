@@ -9,6 +9,7 @@ import { BuildingModule } from './modules/building/building.module';
 import { CommunityModule } from './modules/community/community.module';
 import { ChatModule } from './modules/chat/chat.module';
 import { NotificationModule } from './modules/notification/notification.module';
+import { HealthModule } from './modules/health/health.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { NotificationModule } from './modules/notification/notification.module';
     CommunityModule,
     ChatModule,
     NotificationModule,
+    HealthModule,
   ],
 })
 export class AppModule {}

@@ -4,6 +4,7 @@ import type { Metadata } from 'next'
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { Home, Users, MessageCircle, User } from 'lucide-react'
+import { Toaster } from '@/ui/sonner'
 import '../styles/globals.scss'
 
 // 하단 네비게이션을 숨길 경로들
@@ -78,6 +79,7 @@ export default function RootLayout({
           {children}
           <BottomNav />
         </div>
+        <Toaster />
       </body>
     </html>
   )

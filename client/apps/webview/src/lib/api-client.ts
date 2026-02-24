@@ -220,6 +220,23 @@ class ApiClient {
     })
   }
 
+  async createPost(data: {
+    buildingId: number
+    boardType: string
+    title: string
+    content: string
+    imageUrls?: string[]
+  }) {
+    return this.request<{
+      id: number
+      title: string
+      createdAt: string
+    }>('/api/community/posts', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
   // Activity APIs (내 활동 내역)
   async getMyPosts(page: number = 1, limit: number = 20) {
     return this.request<{

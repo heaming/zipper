@@ -5,6 +5,7 @@ import { Card, CardContent } from '@ui/index'
 import { CommunityTag, TAG_LABELS } from '@zipper/models/src/community'
 import { toast } from 'sonner'
 import { useRouter } from 'next/navigation'
+import { Plus, X } from 'lucide-react'
 
 import { boardTypeByTag } from '../_constants'
 import { WriteScaffold } from './WriteScaffold'
@@ -20,10 +21,52 @@ export function SimpleWrite({ tag, buildingId, onBack }: Props) {
 
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
+  const [images, setImages] = useState<string[]>([])
+  const [imageFiles, setImageFiles] = useState<File[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const titleInputRef = useRef<HTMLInputElement>(null)
   const contentTextareaRef = useRef<HTMLTextAreaElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleFileInputChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+
+    if (images.length + files.length > 5) {
+      toast.error('사진은 최대 5개까지 첨부할 수 있습니다.', {
+        action: { label: '확인', onClick: () => {} },
+      })
+      return
+    }
+
+    const newImages: string[] = []
+    const newFiles: File[] = []
+
+    for (let i = 0; i < files.length && images.length + newImages.length < 5; i++) {
+      const file = files[i]
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader()
+        const dataUrl = await new Promise<string>((resolve, reject) => {
+          reader.onload = () => resolve(reader.result as string)
+          reader.onerror = reject
+          reader.readAsDataURL(file)
+        })
+        newImages.push(dataUrl)
+        newFiles.push(file)
+      }
+    }
+
+    setImages([...images, ...newImages])
+    setImageFiles([...imageFiles, ...newFiles])
+
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  const handleRemoveImage = (index: number) => {
+    setImages(images.filter((_, i) => i !== index))
+    setImageFiles(imageFiles.filter((_, i) => i !== index))
+  }
 
   const handleSubmit = async () => {
     if (!buildingId) {
@@ -70,13 +113,16 @@ export function SimpleWrite({ tag, buildingId, onBack }: Props) {
     try {
       setIsSubmitting(true)
 
+      // NOTE: 이미지 업로드는 아직 서버 API가 없어서 빈 배열 유지(기존 동작 유지)
+      const imageUrls: string[] = []
+
       const { apiClient } = await import('@/lib/api-client')
       const result = await apiClient.createPost({
         buildingId,
         boardType: boardTypeByTag[tag],
         title,
         content,
-        imageUrls: [],
+        imageUrls,
       })
 
       router.push(`/community/${result.id}`)
@@ -120,6 +166,45 @@ export function SimpleWrite({ tag, buildingId, onBack }: Props) {
                 onChange={(e) => setContent(e.target.value)}
                 placeholder="내용을 입력하세요"
                 className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-text-primary mb-2 block">
+                사진 첨부 <span className="text-text-tertiary text-xs">({images.length}/5)</span>
+              </label>
+              <div className="flex gap-2 flex-wrap">
+                {images.map((image, index) => (
+                  <div key={index} className="relative w-20 h-20 rounded-lg overflow-hidden">
+                    <img
+                      src={image}
+                      alt={`첨부 이미지 ${index + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                    <button
+                      onClick={() => handleRemoveImage(index)}
+                      className="absolute top-1 right-1 w-5 h-5 bg-black/50 rounded-full flex items-center justify-center text-white"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+                {images.length < 5 && (
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-20 h-20 rounded-lg border-2 border-dashed border-border flex items-center justify-center text-text-tertiary hover:border-primary transition-colors"
+                  >
+                    <Plus className="w-6 h-6" />
+                  </button>
+                )}
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={handleFileInputChange}
               />
             </div>
           </CardContent>

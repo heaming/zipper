@@ -11,6 +11,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Post, BoardType } from './domain/entities/post.entity';
 import { PostLike } from './domain/entities/post-like.entity';
 import { Comment } from './domain/entities/comment.entity';
+import { PostImage } from './domain/entities/post-image.entity';
 import { BuildingMembership, MembershipStatus } from '../building/domain/entities/building-membership.entity';
 import { User } from '../auth/domain/entities/user.entity';
 import { BuildingVerificationStatus } from '../auth/domain/entities/building-verification.entity';
@@ -40,6 +41,8 @@ export class CommunityService {
     private membershipRepository: Repository<BuildingMembership>,
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    @InjectRepository(PostImage)
+    private postImageRepository: Repository<PostImage>,
     private hotPostService: HotPostService,
     private viewCountService: ViewCountService,
     private eventEmitter: EventEmitter2,
@@ -86,10 +89,12 @@ export class CommunityService {
     }
 
     queryBuilder
+      .leftJoinAndSelect('post.author', 'author')
+      .leftJoinAndSelect('post.images', 'images')
       .orderBy('post.createdAt', 'DESC')
+      .addOrderBy('images.orderIndex', 'ASC')
       .skip((page - 1) * limit)
-      .take(limit)
-      .leftJoinAndSelect('post.author', 'author');
+      .take(limit);
 
     // 디버깅: 생성된 SQL 쿼리 확인
     const sql = queryBuilder.getSql();
@@ -139,11 +144,18 @@ export class CommunityService {
           },
         });
 
+        // 이미지 URL 배열 추출 (orderIndex 순서대로)
+        const imageUrls = post.images
+          ? post.images
+              .sort((a, b) => a.orderIndex - b.orderIndex)
+              .map((img) => img.imageUrl)
+          : [];
+
         return {
           id: post.id,
           title: post.title,
           content: post.content,
-          imageUrls: post.imageUrls || [],
+          imageUrls,
           author: {
             id: post.authorId,
             nickname: author?.nickname || '익명',
@@ -184,11 +196,18 @@ export class CommunityService {
           where: { id: post.authorId },
         });
 
+        // 이미지 URL 배열 추출 (orderIndex 순서대로)
+        const imageUrls = post.images
+          ? post.images
+              .sort((a, b) => a.orderIndex - b.orderIndex)
+              .map((img) => img.imageUrl)
+          : [];
+
         return {
           id: post.id,
           title: post.title,
           content: post.content,
-          imageUrls: post.imageUrls || [],
+          imageUrls,
           author: {
             id: post.authorId,
             nickname: author?.nickname || '익명',
@@ -221,6 +240,8 @@ export class CommunityService {
       .andWhere('post.deletedAt IS NULL')
       .leftJoinAndSelect('post.author', 'author')
       .leftJoinAndSelect('post.building', 'building')
+      .leftJoinAndSelect('post.images', 'images')
+      .orderBy('images.orderIndex', 'ASC')
       .getOne();
 
     if (!post) {
@@ -234,6 +255,7 @@ export class CommunityService {
       buildingId: post.buildingId,
       authorId: post.authorId,
       boardType: post.boardType,
+      imagesCount: post.images?.length || 0,
     })}`);
 
     // 인증 상태 확인: VERIFIED가 아니면 상세 조회 불가
@@ -275,11 +297,21 @@ export class CommunityService {
       throw new NotFoundException('게시글을 찾을 수 없습니다.');
     }
 
+    // 이미지 URL 배열 추출 (orderIndex 순서대로)
+    const imageUrls = post.images && Array.isArray(post.images) && post.images.length > 0
+      ? post.images
+          .sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0))
+          .map((img) => img.imageUrl)
+          .filter((url) => url) // 빈 URL 제거
+      : [];
+    
+    this.logger.log(`[getPostById] Extracted imageUrls: ${JSON.stringify(imageUrls)}`);
+
     return {
       id: post.id,
       title: post.title,
       content: post.content,
-      imageUrls: post.imageUrls || [],
+      imageUrls,
       author: {
         id: post.authorId,
         nickname: author?.nickname || '익명',
@@ -326,18 +358,51 @@ export class CommunityService {
   async createPost(userId: string, dto: CreatePostDto) {
     const userIdNum = parseInt(userId, 10);
     
-    await this.verifyMembership(userIdNum, dto.buildingId);
+    // 사용자의 buildingId를 멤버십에서 추출
+    const membership = await this.membershipRepository.findOne({
+      where: {
+        userId: userIdNum,
+        status: MembershipStatus.ACTIVE,
+      },
+      order: {
+        joinedAt: 'DESC', // 가장 최근에 가입한 빌딩 우선
+      },
+    });
+
+    if (!membership) {
+      throw new NotFoundException('활성화된 빌딩 멤버십이 없습니다.');
+    }
+
+    const buildingId = membership.buildingId;
+    await this.verifyMembership(userIdNum, buildingId);
+
+    // boardType을 BoardType enum으로 변환
+    const boardTypeEnum = dto.boardType.toLowerCase() as BoardType;
+    if (!Object.values(BoardType).includes(boardTypeEnum)) {
+      throw new NotFoundException(`Invalid boardType: ${dto.boardType}`);
+    }
 
     const post = this.postRepository.create({
       authorId: userIdNum,
-      buildingId: dto.buildingId,
-      boardType: dto.boardType,
+      buildingId,
+      boardType: boardTypeEnum,
       title: dto.title,
       content: dto.content,
-      imageUrls: dto.imageUrls || [],
     });
 
     const savedPost = await this.postRepository.save(post);
+
+    // 이미지 저장
+    if (dto.imageUrls && dto.imageUrls.length > 0) {
+      const images = dto.imageUrls.map((url, index) =>
+        this.postImageRepository.create({
+          postId: savedPost.id,
+          imageUrl: url,
+          orderIndex: index,
+        }),
+      );
+      await this.postImageRepository.save(images);
+    }
 
     // 활동 점수 이벤트 발행
     this.eventEmitter.emit('post.created', new PostCreatedEvent(userIdNum));
@@ -368,7 +433,24 @@ export class CommunityService {
 
     if (dto.title) post.title = dto.title;
     if (dto.content) post.content = dto.content;
-    if (dto.imageUrls) post.imageUrls = dto.imageUrls;
+    
+    // 이미지 업데이트
+    if (dto.imageUrls) {
+      // 기존 이미지 삭제
+      await this.postImageRepository.delete({ postId: postIdNum });
+      
+      // 새 이미지 저장
+      if (dto.imageUrls.length > 0) {
+        const images = dto.imageUrls.map((url, index) =>
+          this.postImageRepository.create({
+            postId: postIdNum,
+            imageUrl: url,
+            orderIndex: index,
+          }),
+        );
+        await this.postImageRepository.save(images);
+      }
+    }
 
     const updatedPost = await this.postRepository.save(post);
 
@@ -635,7 +717,7 @@ export class CommunityService {
       order: { createdAt: 'DESC' },
       skip: (page - 1) * limit,
       take: limit,
-      relations: ['author'],
+      relations: ['author', 'images'],
       withDeleted: false,
     });
 
@@ -645,11 +727,18 @@ export class CommunityService {
           where: { id: post.authorId },
         });
 
+        // 이미지 URL 배열 추출 (orderIndex 순서대로)
+        const imageUrls = post.images
+          ? post.images
+              .sort((a, b) => a.orderIndex - b.orderIndex)
+              .map((img) => img.imageUrl)
+          : [];
+
         return {
           id: post.id,
           title: post.title,
           content: post.content,
-          imageUrls: post.imageUrls || [],
+          imageUrls,
           author: {
             id: post.authorId,
             nickname: author?.nickname || '익명',
@@ -733,7 +822,7 @@ export class CommunityService {
       likes.map(async (like) => {
         const post = await this.postRepository.findOne({
           where: { id: like.postId, deletedAt: IsNull() },
-          relations: ['author'],
+          relations: ['author', 'images'],
           withDeleted: false,
         });
 
@@ -745,11 +834,18 @@ export class CommunityService {
           where: { id: post.authorId },
         });
 
+        // 이미지 URL 배열 추출 (orderIndex 순서대로)
+        const imageUrls = post.images
+          ? post.images
+              .sort((a, b) => a.orderIndex - b.orderIndex)
+              .map((img) => img.imageUrl)
+          : [];
+
         return {
           id: post.id,
           title: post.title,
           content: post.content,
-          imageUrls: post.imageUrls || [],
+          imageUrls,
           author: {
             id: post.authorId,
             nickname: author?.nickname || '익명',

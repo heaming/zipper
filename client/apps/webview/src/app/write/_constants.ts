@@ -8,12 +8,11 @@ export const writeOptions = [
   { tag: CommunityTag.MARKET, description: '상업 광고 (권한 필요)' },
 ] as const
 
-export const boardTypeByTag: Record<CommunityTag, 'togather' | 'share' | 'lifestyle' | 'chat' | 'market' | 'all'> = {
+export const boardTypeByTag: Record<Exclude<CommunityTag, CommunityTag.ALL>, 'togather' | 'share' | 'lifestyle' | 'chat' | 'market'> = {
   [CommunityTag.TOGATHER]: 'togather',
   [CommunityTag.SHARE]: 'share',
   [CommunityTag.LIFESTYLE]: 'lifestyle',
   [CommunityTag.CHAT]: 'chat',
   [CommunityTag.MARKET]: 'market',
-  [CommunityTag.ALL]: 'all',
 }
 

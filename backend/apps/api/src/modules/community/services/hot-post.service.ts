@@ -92,7 +92,7 @@ export class HotPostService {
         createdAt: 'DESC',
       },
       take: limit,
-      relations: ['author', 'building'],
+      relations: ['author', 'building', 'images'],
       withDeleted: false,
     });
   }

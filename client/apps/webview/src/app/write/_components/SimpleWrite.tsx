@@ -113,13 +113,33 @@ export function SimpleWrite({ tag, buildingId, onBack }: Props) {
     try {
       setIsSubmitting(true)
 
-      // NOTE: 이미지 업로드는 아직 서버 API가 없어서 빈 배열 유지(기존 동작 유지)
-      const imageUrls: string[] = []
-
       const { apiClient } = await import('@/lib/api-client')
+      
+      // boardType은 필수이며 'togather', 'share', 'lifestyle', 'chat', 'market' 중 하나여야 함
+      const boardType = boardTypeByTag[tag]
+      if (!boardType) {
+        toast.error('유효하지 않은 게시판 타입입니다.', { action: { label: '확인', onClick: () => {} } })
+        return
+      }
+
+      // 이미지 업로드
+      let imageUrls: string[] = []
+      if (imageFiles.length > 0) {
+        try {
+          console.log('[SimpleWrite] Uploading images:', imageFiles.length)
+          const uploadResult = await apiClient.uploadImages(imageFiles)
+          console.log('[SimpleWrite] Upload result:', uploadResult)
+          imageUrls = uploadResult.imageUrls
+        } catch (uploadError) {
+          console.error('[SimpleWrite] Image upload failed:', uploadError)
+          toast.error('이미지 업로드에 실패했습니다. 다시 시도해주세요.', { action: { label: '확인', onClick: () => {} } })
+          setIsSubmitting(false)
+          return
+        }
+      }
+      
       const result = await apiClient.createPost({
-        buildingId,
-        boardType: boardTypeByTag[tag],
+        boardType,
         title,
         content,
         imageUrls,

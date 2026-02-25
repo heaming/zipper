@@ -7,7 +7,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Eye, Home as HomeIcon, MessageCircle, User, ArrowUp, Lock, MoreVertical, Pencil, Trash2, Flag, MapPin } from 'lucide-react'
+import { ArrowLeft, Eye, Home as HomeIcon, MessageCircle, User, ArrowUp, Lock, MoreVertical, Pencil, Trash2, Flag, MapPin, X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Card, CardContent, Button, Divider, Badge, BottomSheet, BottomSheetContent } from '@ui/index'
 import { CommunityTag, TAG_ICONS } from '@zipper/models/src/community'
 import { apiClient } from '@/lib/api-client'
@@ -18,12 +18,14 @@ interface Post {
   id: number
   title: string
   content: string
-  boardType: string
+  boardType?: string | null
+  tag?: string | null
   likeCount: number
   commentCount: number
   viewCount: number
   createdAt: string
   isLiked?: boolean
+  imageUrls?: string[]
   author?: {
     id: number
     nickname: string
@@ -73,6 +75,12 @@ export default function PostDetailPage() {
   // 인증 관련 state
   const [showVerificationSheet, setShowVerificationSheet] = useState(false)
   
+  // 이미지 뷰어 관련 state
+  const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null)
+  const [touchStartX, setTouchStartX] = useState(0)
+  const [touchEndX, setTouchEndX] = useState(0)
+  const imageViewerRef = useRef<HTMLDivElement>(null)
+  
   // comments ref 동기화
   useEffect(() => {
     commentsRef.current = comments
@@ -81,6 +89,8 @@ export default function PostDetailPage() {
   const fetchPost = async () => {
     try {
       const data = await apiClient.getPost(Number(postId))
+      console.log('[PostDetail] Fetched post data:', data)
+      console.log('[PostDetail] Image URLs:', data.imageUrls)
       setPost(data)
       
       // 좋아요 상태 초기화
@@ -410,6 +420,37 @@ export default function PostDetailPage() {
     return mapping[boardType.toLowerCase()] || CommunityTag.ALL
   }
 
+  const handlePreviousImage = () => {
+    if (!post?.imageUrls || selectedImageIndex === null) return
+    setSelectedImageIndex(
+      selectedImageIndex > 0 ? selectedImageIndex - 1 : post.imageUrls.length - 1
+    )
+  }
+
+  const handleNextImage = () => {
+    if (!post?.imageUrls || selectedImageIndex === null) return
+    setSelectedImageIndex(
+      selectedImageIndex < post.imageUrls.length - 1 ? selectedImageIndex + 1 : 0
+    )
+  }
+
+  const handleSwipe = () => {
+    if (!post?.imageUrls || selectedImageIndex === null) return
+    
+    const swipeThreshold = 50
+    const diff = touchStartX - touchEndX
+
+    if (Math.abs(diff) > swipeThreshold) {
+      if (diff > 0) {
+        // Swipe left - next image
+        handleNextImage()
+      } else {
+        // Swipe right - previous image
+        handlePreviousImage()
+      }
+    }
+  }
+
   if (!isAuthenticated) {
     return null
   }
@@ -422,7 +463,7 @@ export default function PostDetailPage() {
     )
   }
 
-  if (!post) {
+  if (!post || !post.boardType) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-background gap-4">
         <p className="text-text-secondary">게시글을 찾을 수 없습니다</p>
@@ -482,6 +523,47 @@ export default function PostDetailPage() {
             <div className="my-4 text-text-primary whitespace-pre-wrap">
               {post.content}
             </div>
+
+            <Divider />
+
+            {/* Images Section */}
+            {post.imageUrls && post.imageUrls.length > 0 && (
+              <div className="my-4">
+                <div 
+                  className="flex gap-2 overflow-x-auto scrollbar-hide pb-2"
+                  style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                >
+                  {post.imageUrls.slice(0, 3).map((imageUrl, index) => (
+                    <div
+                      key={index}
+                      onClick={() => setSelectedImageIndex(index)}
+                      className="relative flex-shrink-0 w-24 h-24 rounded-lg overflow-hidden bg-gray-100 cursor-pointer hover:opacity-90 transition-opacity"
+                    >
+                      <img
+                        src={imageUrl}
+                        alt={`이미지 ${index + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  ))}
+                  {post.imageUrls.length > 3 && (
+                    <div
+                      onClick={() => setSelectedImageIndex(3)}
+                      className="relative flex-shrink-0 w-24 h-24 rounded-lg overflow-hidden bg-gray-100 cursor-pointer hover:opacity-90 transition-opacity flex items-center justify-center"
+                    >
+                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-10">
+                        <span className="text-white font-semibold text-sm">+{post.imageUrls.length - 3}</span>
+                      </div>
+                      <img
+                        src={post.imageUrls[3]}
+                        alt={`이미지 4`}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             <Divider />
 
@@ -834,6 +916,73 @@ export default function PostDetailPage() {
           </form>
         </div>
       </div>
+
+      {/* Full Screen Image Viewer */}
+      {selectedImageIndex !== null && post.imageUrls && (
+        <div 
+          ref={imageViewerRef}
+          className="fixed inset-0 bg-black z-50 flex items-center justify-center"
+          onTouchStart={(e) => setTouchStartX(e.touches[0].clientX)}
+          onTouchEnd={(e) => {
+            setTouchEndX(e.changedTouches[0].clientX)
+            handleSwipe()
+          }}
+        >
+          <button
+            onClick={() => setSelectedImageIndex(null)}
+            className="absolute top-4 right-4 z-10 p-2 bg-black/50 rounded-full text-white hover:bg-black/70 transition-colors"
+          >
+            <X className="w-6 h-6" strokeWidth={2} />
+          </button>
+          
+          {post.imageUrls.length > 1 && (
+            <>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handlePreviousImage()
+                }}
+                className="absolute left-4 z-10 p-2 bg-black/50 rounded-full text-white hover:bg-black/70 transition-colors"
+              >
+                <ChevronLeft className="w-6 h-6" strokeWidth={2} />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleNextImage()
+                }}
+                className="absolute right-4 z-10 p-2 bg-black/50 rounded-full text-white hover:bg-black/70 transition-colors"
+              >
+                <ChevronRight className="w-6 h-6" strokeWidth={2} />
+              </button>
+            </>
+          )}
+          
+          <div className="relative w-full h-full flex items-center justify-center p-4">
+            <img
+              src={post.imageUrls[selectedImageIndex]}
+              alt={`이미지 ${selectedImageIndex + 1}`}
+              className="max-w-full max-h-full object-contain select-none"
+              draggable={false}
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+          
+          {post.imageUrls.length > 1 && (
+            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2">
+              {post.imageUrls.map((_, index) => (
+                <div
+                  key={index}
+                  className={cn(
+                    "h-2 rounded-full transition-all",
+                    index === selectedImageIndex ? "bg-white w-6" : "bg-white/50 w-2"
+                  )}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Verification Bottom Sheet */}
       <BottomSheet open={showVerificationSheet} onOpenChange={setShowVerificationSheet}>

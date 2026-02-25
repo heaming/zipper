@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils'
 import { apiClient } from '@/lib/api-client'
 import { useAuthStore } from '@/stores/auth-store'
 import { CommunityPostCard } from '@/features/community/components/community-post-card'
+import { boardTypeByTag } from '@/app/write/_constants'
 
 const tags = [
   CommunityTag.ALL,
@@ -32,6 +33,7 @@ interface Post {
   commentCount: number
   viewCount: number
   createdAt: string
+  imageUrls?: string[]
   author?: {
     id: number
     nickname: string
@@ -131,7 +133,10 @@ export default function CommunityPage() {
     
     try {
       setLoading(true)
-      const boardType = activeTag === CommunityTag.ALL ? undefined : activeTag
+      // CommunityTag를 boardType 문자열로 변환
+      const boardType = activeTag === CommunityTag.ALL 
+        ? undefined 
+        : boardTypeByTag[activeTag as Exclude<CommunityTag, CommunityTag.ALL>]
       const data = await apiClient.getPosts(buildingId, boardType, 50)
       setPosts(data.posts || data)
     } catch (error) {

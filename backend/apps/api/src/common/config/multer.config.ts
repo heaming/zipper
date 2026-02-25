@@ -1,16 +1,12 @@
 import { MulterOptions } from '@nestjs/platform-express/multer/interfaces/multer-options.interface';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
+import { memoryStorage } from 'multer';
 
+/**
+ * Multer 설정
+ * memoryStorage를 사용하여 파일을 메모리에 저장 (로컬/S3 저장소에서 처리)
+ */
 export const multerConfig: MulterOptions = {
-  storage: diskStorage({
-    destination: './uploads',
-    filename: (req, file, callback) => {
-      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-      const ext = extname(file.originalname);
-      callback(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
-    },
-  }),
+  storage: memoryStorage(), // 파일을 메모리에 저장 (버퍼로 전달)
   limits: {
     fileSize: 5 * 1024 * 1024, // 5MB
   },

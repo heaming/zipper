@@ -194,15 +194,33 @@ export function TogetherWrite({ buildingId, onBack }: Props) {
     try {
       setIsSubmitting(true)
 
-      // NOTE: 이미지 업로드는 아직 서버 API가 없어서 빈 배열 유지(기존 동작 유지)
-      const imageUrls: string[] = []
+      // 이미지 업로드
+      let imageUrls: string[] = []
+      if (imageFiles.length > 0) {
+        try {
+          console.log('[TogetherWrite] Uploading images:', imageFiles.length)
+          const uploadResult = await apiClient.uploadImages(imageFiles)
+          console.log('[TogetherWrite] Upload result:', uploadResult)
+          imageUrls = uploadResult.imageUrls
+        } catch (uploadError) {
+          console.error('[TogetherWrite] Image upload failed:', uploadError)
+          toast.error('이미지 업로드에 실패했습니다. 다시 시도해주세요.', { action: { label: '확인', onClick: () => {} } })
+          setIsSubmitting(false)
+          return
+        }
+      }
 
       const result = await apiClient.createPost({
-        buildingId,
         boardType: boardTypeByTag[CommunityTag.TOGATHER],
         title,
         content: description,
         imageUrls,
+        meta: {
+          quantity: targetQuantity ? parseInt(targetQuantity, 10) : undefined,
+          deadline: deadlineDate && deadlineTime 
+            ? new Date(`${format(deadlineDate, 'yyyy-MM-dd')}T${deadlineTime}:00`).toISOString()
+            : undefined,
+        },
       })
 
       router.push(`/community/${result.id}`)

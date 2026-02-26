@@ -134,36 +134,51 @@ INSERT INTO building_memberships ("userId", "buildingId", status, "joinedAt", "c
 -- ============================================
 
 -- 같이 사요 (6개)
-INSERT INTO posts ("authorId", "buildingId", "boardType", title, content, "imageUrls", "likeCount", "commentCount", "viewCount", "hotScore", "isHot", "createdAt", "updatedAt") VALUES
-                                                                                                                                                                                    (1, 1, 'togather', '🍗 치킨 같이 시킬 분 (101동)', '2마리 너무 많아서 나눠요. 교촌치킨 허니콤보 생각 중이에요!', NULL, 15, 8, 45, 23.5, true, NOW() - INTERVAL '5 minutes', NOW()),
-                                                                                                                                                                                    (2, 1, 'togather', '🥤 편의점 행사 같이 해요 (102동)', '2+1 행사 중이래요. 음료수나 과자 같이 사실 분?', NULL, 12, 5, 38, 17.0, true, NOW() - INTERVAL '30 minutes', NOW()),
-                                                                                                                                                                                    (3, 1, 'togather', '🍕 피자 공동구매 (101동)', '도미노피자 2판 시키면 할인이래요. 같이 시키실 분 계신가요?', NULL, 18, 12, 56, 30.0, true, NOW() - INTERVAL '1 hour', NOW()),
-                                                                                                                                                                                    (4, 1, 'togather', '🥩 닭가슴살 대량 구매 (103동)', '헬스하시는 분들 모여서 같이 구매해요. 1kg당 가격 저렴해집니다', NULL, 10, 6, 32, 16.0, false, NOW() - INTERVAL '2 hours', NOW()),
-                                                                                                                                                                                    (5, 1, 'togather', '☕️ 스타벅스 텀블러 공구 (102동)', '여름 시즌 한정판 텀블러 공동구매 하실 분?', NULL, 8, 4, 28, 12.0, false, NOW() - INTERVAL '3 hours', NOW()),
-                                                                                                                                                                                    (1, 1, 'togather', '🍜 족발 나눠먹어요 (101동)', '오늘 저녁 족발 시킬건데 반반 나눌 분 계신가요?', NULL, 20, 15, 67, 35.0, true, NOW() - INTERVAL '4 hours', NOW());
+INSERT INTO posts ("authorId", "buildingId", "boardType", title, content, status, "isCommercial", "likeCount", "commentCount", "viewCount", "hotScore", "isHot", "createdAt", "updatedAt") VALUES
+                                                                                                                                                                                    (1, 1, 'togather', '🍗 치킨 같이 시킬 분 (101동)', '2마리 너무 많아서 나눠요. 교촌치킨 허니콤보 생각 중이에요!', 'active', false, 15, 8, 45, 23.5, true, NOW() - INTERVAL '5 minutes', NOW()),
+                                                                                                                                                                                    (2, 1, 'togather', '🥤 편의점 행사 같이 해요 (102동)', '2+1 행사 중이래요. 음료수나 과자 같이 사실 분?', 'active', false, 12, 5, 38, 17.0, true, NOW() - INTERVAL '30 minutes', NOW()),
+                                                                                                                                                                                    (3, 1, 'togather', '🍕 피자 공동구매 (101동)', '도미노피자 2판 시키면 할인이래요. 같이 시키실 분 계신가요?', 'active', false, 18, 12, 56, 30.0, true, NOW() - INTERVAL '1 hour', NOW()),
+                                                                                                                                                                                    (4, 1, 'togather', '🥩 닭가슴살 대량 구매 (103동)', '헬스하시는 분들 모여서 같이 구매해요. 1kg당 가격 저렴해집니다', 'active', false, 10, 6, 32, 16.0, false, NOW() - INTERVAL '2 hours', NOW()),
+                                                                                                                                                                                    (5, 1, 'togather', '☕️ 스타벅스 텀블러 공구 (102동)', '여름 시즌 한정판 텀블러 공동구매 하실 분?', 'active', false, 8, 4, 28, 12.0, false, NOW() - INTERVAL '3 hours', NOW()),
+                                                                                                                                                                                    (1, 1, 'togather', '🍜 족발 나눠먹어요 (101동)', '오늘 저녁 족발 시킬건데 반반 나눌 분 계신가요?', 'active', false, 20, 15, 67, 35.0, true, NOW() - INTERVAL '4 hours', NOW());
+
+-- 같이 사요 게시글 메타 데이터 (post_meta)
+INSERT INTO post_meta ("postId", quantity, deadline, "locationDetail", "extraData", "createdAt", "updatedAt") VALUES
+-- 게시글 1 (치킨) - 3명 모집, 오늘 오후 7시, 101동 공동현관
+(1, 3, NOW() + INTERVAL '2 hours', '101동 공동현관', '{"category": "배달"}', NOW() - INTERVAL '5 minutes', NOW()),
+-- 게시글 2 (편의점) - 2명 모집, 오늘 오후 6시, 102동 공동현관
+(2, 2, NOW() + INTERVAL '1 hour', '102동 공동현관', '{"category": "공구"}', NOW() - INTERVAL '30 minutes', NOW()),
+-- 게시글 3 (피자) - 4명 모집, 오늘 오후 6시, 101동 공동현관
+(3, 4, NOW() + INTERVAL '1 hour', '101동 공동현관', '{"category": "배달"}', NOW() - INTERVAL '1 hour', NOW()),
+-- 게시글 4 (닭가슴살) - 3명 모집, 내일 오후 2시, 103동 공동현관
+(4, 3, NOW() + INTERVAL '1 day' + INTERVAL '2 hours', '103동 공동현관', '{"category": "공구"}', NOW() - INTERVAL '2 hours', NOW()),
+-- 게시글 5 (텀블러) - 5명 모집, 3일 후 오후 3시, 102동 공동현관
+(5, 5, NOW() + INTERVAL '3 days' + INTERVAL '3 hours', '102동 공동현관', '{"category": "공구"}', NOW() - INTERVAL '3 hours', NOW()),
+-- 게시글 6 (족발) - 2명 모집, 오늘 오후 8시, 101동 공동현관
+(6, 2, NOW() + INTERVAL '3 hours', '101동 공동현관', '{"category": "배달"}', NOW() - INTERVAL '4 hours', NOW());
 
 -- 나눔 (5개)
-INSERT INTO posts ("authorId", "buildingId", "boardType", title, content, "imageUrls", "likeCount", "commentCount", "viewCount", "hotScore", "isHot", "createdAt", "updatedAt") VALUES
-                                                                                                                                                                                    (2, 1, 'share', '📦 아기 옷 나눔해요 (102동 1층)', '사이즈 80~90, 상태 좋아요. 필요하신 분 연락주세요', NULL, 10, 4, 30, 14.0, false, NOW() - INTERVAL '1 hour', NOW()),
-                                                                                                                                                                                    (3, 1, 'share', '📚 책 나눔합니다 (101동)', '소설책 10권 정도 드려요. 먼저 연락주시는 분께', NULL, 7, 3, 25, 10.0, false, NOW() - INTERVAL '2 hours', NOW()),
-                                                                                                                                                                                    (4, 1, 'share', '🪴 화분 나눔 (103동)', '이사 가면서 못 가져가는 화분들 나눔해요', NULL, 12, 6, 38, 18.0, false, NOW() - INTERVAL '3 hours', NOW()),
-                                                                                                                                                                                    (5, 1, 'share', '🎮 보드게임 나눔 (102동)', '안 하는 보드게임 3개 드려요. 상태 좋습니다', NULL, 9, 5, 28, 14.0, false, NOW() - INTERVAL '4 hours', NOW()),
-                                                                                                                                                                                    (1, 1, 'share', '🍚 쌀 조금 나눔 (101동)', '쌀 너무 많이 샀어요. 2kg 정도 나눠드려요', NULL, 11, 7, 34, 18.0, false, NOW() - INTERVAL '5 hours', NOW());
+INSERT INTO posts ("authorId", "buildingId", "boardType", title, content, status, "isCommercial", "likeCount", "commentCount", "viewCount", "hotScore", "isHot", "createdAt", "updatedAt") VALUES
+                                                                                                                                                                                    (2, 1, 'share', '📦 아기 옷 나눔해요 (102동 1층)', '사이즈 80~90, 상태 좋아요. 필요하신 분 연락주세요', 'active', false, 10, 4, 30, 14.0, false, NOW() - INTERVAL '1 hour', NOW()),
+                                                                                                                                                                                    (3, 1, 'share', '📚 책 나눔합니다 (101동)', '소설책 10권 정도 드려요. 먼저 연락주시는 분께', 'active', false, 7, 3, 25, 10.0, false, NOW() - INTERVAL '2 hours', NOW()),
+                                                                                                                                                                                    (4, 1, 'share', '🪴 화분 나눔 (103동)', '이사 가면서 못 가져가는 화분들 나눔해요', 'active', false, 12, 6, 38, 18.0, false, NOW() - INTERVAL '3 hours', NOW()),
+                                                                                                                                                                                    (5, 1, 'share', '🎮 보드게임 나눔 (102동)', '안 하는 보드게임 3개 드려요. 상태 좋습니다', 'active', false, 9, 5, 28, 14.0, false, NOW() - INTERVAL '4 hours', NOW()),
+                                                                                                                                                                                    (1, 1, 'share', '🍚 쌀 조금 나눔 (101동)', '쌀 너무 많이 샀어요. 2kg 정도 나눠드려요', 'active', false, 11, 7, 34, 18.0, false, NOW() - INTERVAL '5 hours', NOW());
 
 -- ZIP 생활 (5개)
-INSERT INTO posts ("authorId", "buildingId", "boardType", title, content, "imageUrls", "likeCount", "commentCount", "viewCount", "hotScore", "isHot", "createdAt", "updatedAt") VALUES
-                                                                                                                                                                                    (2, 1, 'lifestyle', '🛠 엘베 점검 언제 끝나요?', '102동 엘베 공지 못 봐서 혹시 아시는 분 계신가요?', NULL, 25, 15, 78, 40.0, true, NOW() - INTERVAL '30 minutes', NOW()),
-                                                                                                                                                                                    (3, 1, 'lifestyle', '🚗 주차장 CCTV 확인 문의', '101동 앞 주차장에서 차 긁힌 거 같은데 확인 가능한가요?', NULL, 18, 11, 56, 29.0, true, NOW() - INTERVAL '1 hour', NOW()),
-                                                                                                                                                                                    (4, 1, 'lifestyle', '♻️ 분리수거 요일이 언제죠?', '103동으로 이사 온 지 얼마 안 돼서 잘 모르겠어요', NULL, 15, 8, 45, 23.0, false, NOW() - INTERVAL '2 hours', NOW()),
-                                                                                                                                                                                    (5, 1, 'lifestyle', '🔊 층간소음 민원 (102동)', '위층에서 너무 시끄러운데 어떻게 해야 할까요?', NULL, 22, 18, 72, 40.0, true, NOW() - INTERVAL '3 hours', NOW()),
-                                                                                                                                                                                    (1, 1, 'lifestyle', '💡 복도 전등 고장났어요 (101동)', '3층 복도 전등이 나갔는데 관리사무소에 연락했나요?', NULL, 10, 5, 32, 15.0, false, NOW() - INTERVAL '4 hours', NOW());
+INSERT INTO posts ("authorId", "buildingId", "boardType", title, content, status, "isCommercial", "likeCount", "commentCount", "viewCount", "hotScore", "isHot", "createdAt", "updatedAt") VALUES
+                                                                                                                                                                                    (2, 1, 'lifestyle', '🛠 엘베 점검 언제 끝나요?', '102동 엘베 공지 못 봐서 혹시 아시는 분 계신가요?', 'active', false, 25, 15, 78, 40.0, true, NOW() - INTERVAL '30 minutes', NOW()),
+                                                                                                                                                                                    (3, 1, 'lifestyle', '🚗 주차장 CCTV 확인 문의', '101동 앞 주차장에서 차 긁힌 거 같은데 확인 가능한가요?', 'active', false, 18, 11, 56, 29.0, true, NOW() - INTERVAL '1 hour', NOW()),
+                                                                                                                                                                                    (4, 1, 'lifestyle', '♻️ 분리수거 요일이 언제죠?', '103동으로 이사 온 지 얼마 안 돼서 잘 모르겠어요', 'active', false, 15, 8, 45, 23.0, false, NOW() - INTERVAL '2 hours', NOW()),
+                                                                                                                                                                                    (5, 1, 'lifestyle', '🔊 층간소음 민원 (102동)', '위층에서 너무 시끄러운데 어떻게 해야 할까요?', 'active', false, 22, 18, 72, 40.0, true, NOW() - INTERVAL '3 hours', NOW()),
+                                                                                                                                                                                    (1, 1, 'lifestyle', '💡 복도 전등 고장났어요 (101동)', '3층 복도 전등이 나갔는데 관리사무소에 연락했나요?', 'active', false, 10, 5, 32, 15.0, false, NOW() - INTERVAL '4 hours', NOW());
 
 -- 잡담 (4개)
-INSERT INTO posts ("authorId", "buildingId", "boardType", title, content, "imageUrls", "likeCount", "commentCount", "viewCount", "hotScore", "isHot", "createdAt", "updatedAt") VALUES
-                                                                                                                                                                                    (2, 1, 'chat', '🐱 요즘 단지 고양이 보신 분?', '치즈냥이 어디 갔을까요? 걱정돼요. 보통 102동 쪽에 있었는데...', NULL, 20, 12, 65, 32.0, true, NOW() - INTERVAL '1 hour', NOW()),
-                                                                                                                                                                                    (3, 1, 'chat', '☕️ 근처 카페 추천해주세요', '조용하고 와이파이 잘 되는 곳 찾아요', NULL, 15, 10, 48, 25.0, false, NOW() - INTERVAL '2 hours', NOW()),
-                                                                                                                                                                                    (4, 1, 'chat', '🍜 맛집 추천 부탁드려요', '이 동네 처음인데 맛집 좀 알려주세요!', NULL, 18, 14, 58, 32.0, true, NOW() - INTERVAL '3 hours', NOW()),
-                                                                                                                                                                                    (5, 1, 'chat', '🏃 운동 같이 하실 분', '아침 조깅 같이 하실 분 모집해요. 단지 내 트랙에서!', NULL, 14, 9, 45, 23.0, false, NOW() - INTERVAL '4 hours', NOW());
+INSERT INTO posts ("authorId", "buildingId", "boardType", title, content, status, "isCommercial", "likeCount", "commentCount", "viewCount", "hotScore", "isHot", "createdAt", "updatedAt") VALUES
+                                                                                                                                                                                    (2, 1, 'chat', '🐱 요즘 단지 고양이 보신 분?', '치즈냥이 어디 갔을까요? 걱정돼요. 보통 102동 쪽에 있었는데...', 'active', false, 20, 12, 65, 32.0, true, NOW() - INTERVAL '1 hour', NOW()),
+                                                                                                                                                                                    (3, 1, 'chat', '☕️ 근처 카페 추천해주세요', '조용하고 와이파이 잘 되는 곳 찾아요', 'active', false, 15, 10, 48, 25.0, false, NOW() - INTERVAL '2 hours', NOW()),
+                                                                                                                                                                                    (4, 1, 'chat', '🍜 맛집 추천 부탁드려요', '이 동네 처음인데 맛집 좀 알려주세요!', 'active', false, 18, 14, 58, 32.0, true, NOW() - INTERVAL '3 hours', NOW()),
+                                                                                                                                                                                    (5, 1, 'chat', '🏃 운동 같이 하실 분', '아침 조깅 같이 하실 분 모집해요. 단지 내 트랙에서!', 'active', false, 14, 9, 45, 23.0, false, NOW() - INTERVAL '4 hours', NOW());
 
 -- ============================================
 -- 건물 2 (힐스테이트 역삼) - 8개 게시글
@@ -171,24 +186,33 @@ INSERT INTO posts ("authorId", "buildingId", "boardType", title, content, "image
 -- ============================================
 
 -- 같이 사요 (3개)
-INSERT INTO posts ("authorId", "buildingId", "boardType", title, content, "imageUrls", "likeCount", "commentCount", "viewCount", "hotScore", "isHot", "createdAt", "updatedAt") VALUES
-                                                                                                                                                                                    (6, 2, 'togather', '🍔 맥딜리버리 같이 시켜요 (A동)', '배달비 나눠요. 빅맥 세트 시킬 예정!', NULL, 8, 4, 28, 12.0, false, NOW() - INTERVAL '1 hour', NOW()),
-                                                                                                                                                                                    (7, 2, 'togather', '🧴 생필품 공동구매 (B동)', '쿠팡 로켓배송 묶음 배송하실 분?', NULL, 12, 6, 35, 18.0, false, NOW() - INTERVAL '2 hours', NOW()),
-                                                                                                                                                                                    (8, 2, 'togather', '🥗 샐러드 정기배송 (A동)', '헬시플 정기배송 같이 신청하면 싸요', NULL, 10, 5, 30, 15.0, false, NOW() - INTERVAL '3 hours', NOW());
+INSERT INTO posts ("authorId", "buildingId", "boardType", title, content, status, "isCommercial", "likeCount", "commentCount", "viewCount", "hotScore", "isHot", "createdAt", "updatedAt") VALUES
+                                                                                                                                                                                    (6, 2, 'togather', '🍔 맥딜리버리 같이 시켜요 (A동)', '배달비 나눠요. 빅맥 세트 시킬 예정!', 'active', false, 8, 4, 28, 12.0, false, NOW() - INTERVAL '1 hour', NOW()),
+                                                                                                                                                                                    (7, 2, 'togather', '🧴 생필품 공동구매 (B동)', '쿠팡 로켓배송 묶음 배송하실 분?', 'active', false, 12, 6, 35, 18.0, false, NOW() - INTERVAL '2 hours', NOW()),
+                                                                                                                                                                                    (8, 2, 'togather', '🥗 샐러드 정기배송 (A동)', '헬시플 정기배송 같이 신청하면 싸요', 'active', false, 10, 5, 30, 15.0, false, NOW() - INTERVAL '3 hours', NOW());
+
+-- 건물 2 같이 사요 게시글 메타 데이터
+INSERT INTO post_meta ("postId", quantity, deadline, "locationDetail", "extraData", "createdAt", "updatedAt") VALUES
+-- 게시글 21 (맥딜리버리) - 2명 모집, 오늘 오후 7시, A동 공동현관
+(21, 2, NOW() + INTERVAL '1 hour', 'A동 공동현관', '{"category": "배달"}', NOW() - INTERVAL '1 hour', NOW()),
+-- 게시글 22 (생필품) - 3명 모집, 내일 오후 1시, B동 공동현관
+(22, 3, NOW() + INTERVAL '1 day' + INTERVAL '1 hour', 'B동 공동현관', '{"category": "공구"}', NOW() - INTERVAL '2 hours', NOW()),
+-- 게시글 23 (샐러드) - 4명 모집, 2일 후 오후 2시, A동 공동현관
+(23, 4, NOW() + INTERVAL '2 days' + INTERVAL '2 hours', 'A동 공동현관', '{"category": "공구"}', NOW() - INTERVAL '3 hours', NOW());
 
 -- 나눔 (2개)
-INSERT INTO posts ("authorId", "buildingId", "boardType", title, content, "imageUrls", "likeCount", "commentCount", "viewCount", "hotScore", "isHot", "createdAt", "updatedAt") VALUES
-                                                                                                                                                                                    (6, 2, 'share', '🖨 프린터 나눔합니다 (A동)', '새 거 샀어요. 잘 작동해요', NULL, 7, 3, 22, 10.0, false, NOW() - INTERVAL '4 hours', NOW()),
-                                                                                                                                                                                    (7, 2, 'share', '🎾 테니스 라켓 드려요 (B동)', '안 쓰는 라켓 2개 드립니다', NULL, 5, 2, 18, 7.0, false, NOW() - INTERVAL '5 hours', NOW());
+INSERT INTO posts ("authorId", "buildingId", "boardType", title, content, status, "isCommercial", "likeCount", "commentCount", "viewCount", "hotScore", "isHot", "createdAt", "updatedAt") VALUES
+                                                                                                                                                                                    (6, 2, 'share', '🖨 프린터 나눔합니다 (A동)', '새 거 샀어요. 잘 작동해요', 'active', false, 7, 3, 22, 10.0, false, NOW() - INTERVAL '4 hours', NOW()),
+                                                                                                                                                                                    (7, 2, 'share', '🎾 테니스 라켓 드려요 (B동)', '안 쓰는 라켓 2개 드립니다', 'active', false, 5, 2, 18, 7.0, false, NOW() - INTERVAL '5 hours', NOW());
 
 -- ZIP 생활 (2개)
-INSERT INTO posts ("authorId", "buildingId", "boardType", title, content, "imageUrls", "likeCount", "commentCount", "viewCount", "hotScore", "isHot", "createdAt", "updatedAt") VALUES
-                                                                                                                                                                                    (6, 2, 'lifestyle', '📦 택배함 비밀번호', 'A동 택배함 비밀번호 변경됐나요?', NULL, 12, 7, 38, 19.0, false, NOW() - INTERVAL '2 hours', NOW()),
-                                                                                                                                                                                    (8, 2, 'lifestyle', '🚿 수압이 약해요', 'A동 고층 수압이 약한데 다른 동도 그런가요?', NULL, 15, 9, 42, 24.0, false, NOW() - INTERVAL '3 hours', NOW());
+INSERT INTO posts ("authorId", "buildingId", "boardType", title, content, status, "isCommercial", "likeCount", "commentCount", "viewCount", "hotScore", "isHot", "createdAt", "updatedAt") VALUES
+                                                                                                                                                                                    (6, 2, 'lifestyle', '📦 택배함 비밀번호', 'A동 택배함 비밀번호 변경됐나요?', 'active', false, 12, 7, 38, 19.0, false, NOW() - INTERVAL '2 hours', NOW()),
+                                                                                                                                                                                    (8, 2, 'lifestyle', '🚿 수압이 약해요', 'A동 고층 수압이 약한데 다른 동도 그런가요?', 'active', false, 15, 9, 42, 24.0, false, NOW() - INTERVAL '3 hours', NOW());
 
 -- 잡담 (1개)
-INSERT INTO posts ("authorId", "buildingId", "boardType", title, content, "imageUrls", "likeCount", "commentCount", "viewCount", "hotScore", "isHot", "createdAt", "updatedAt") VALUES
-    (7, 2, 'chat', '🎬 넷플릭스 추천작', '요즘 볼만한 거 추천해주세요!', NULL, 10, 6, 32, 16.0, false, NOW() - INTERVAL '4 hours', NOW());
+INSERT INTO posts ("authorId", "buildingId", "boardType", title, content, status, "isCommercial", "likeCount", "commentCount", "viewCount", "hotScore", "isHot", "createdAt", "updatedAt") VALUES
+    (7, 2, 'chat', '🎬 넷플릭스 추천작', '요즘 볼만한 거 추천해주세요!', 'active', false, 10, 6, 32, 16.0, false, NOW() - INTERVAL '4 hours', NOW());
 
 -- ============================================
 -- 건물 3 (트리마제 오피스텔) - 5개 게시글
@@ -196,18 +220,32 @@ INSERT INTO posts ("authorId", "buildingId", "boardType", title, content, "image
 -- ============================================
 
 -- 같이 사요 (2개)
-INSERT INTO posts ("authorId", "buildingId", "boardType", title, content, "imageUrls", "likeCount", "commentCount", "viewCount", "hotScore", "isHot", "createdAt", "updatedAt") VALUES
-                                                                                                                                                                                    (9, 3, 'togather', '🍱 점심 도시락 공동주문', '샐러디 단체 주문하면 할인이에요', NULL, 6, 3, 20, 9.0, false, NOW() - INTERVAL '2 hours', NOW()),
-                                                                                                                                                                                    (10, 3, 'togather', '☕️ 커피 원두 공동구매', '스페셜티 원두 킬로 단위로 사요', NULL, 8, 4, 25, 12.0, false, NOW() - INTERVAL '3 hours', NOW());
+INSERT INTO posts ("authorId", "buildingId", "boardType", title, content, status, "isCommercial", "likeCount", "commentCount", "viewCount", "hotScore", "isHot", "createdAt", "updatedAt") VALUES
+                                                                                                                                                                                    (9, 3, 'togather', '🍱 점심 도시락 공동주문', '샐러디 단체 주문하면 할인이에요', 'active', false, 6, 3, 20, 9.0, false, NOW() - INTERVAL '2 hours', NOW()),
+                                                                                                                                                                                    (10, 3, 'togather', '☕️ 커피 원두 공동구매', '스페셜티 원두 킬로 단위로 사요', 'active', false, 8, 4, 25, 12.0, false, NOW() - INTERVAL '3 hours', NOW());
+
+-- 건물 3 같이 사요 게시글 메타 데이터
+INSERT INTO post_meta ("postId", quantity, deadline, "locationDetail", "extraData", "createdAt", "updatedAt") VALUES
+-- 게시글 29 (도시락) - 3명 모집, 오늘 오후 12시, 1층 로비
+(29, 3, NOW() + INTERVAL '30 minutes', '1층 로비', '{"category": "배달"}', NOW() - INTERVAL '2 hours', NOW()),
+-- 게시글 30 (커피 원두) - 5명 모집, 3일 후 오후 3시, 1층 로비
+(30, 5, NOW() + INTERVAL '3 days' + INTERVAL '3 hours', '1층 로비', '{"category": "공구"}', NOW() - INTERVAL '3 hours', NOW());
+
+-- 건물 3 같이 사요 게시글 메타 데이터
+INSERT INTO post_meta ("postId", quantity, deadline, "locationDetail", "extraData", "createdAt", "updatedAt") VALUES
+-- 게시글 29 (도시락) - 3명 모집, 오늘 오후 12시, 1층 로비
+(29, 3, NOW() + INTERVAL '30 minutes', '1층 로비', '{"category": "배달"}', NOW() - INTERVAL '2 hours', NOW()),
+-- 게시글 30 (커피 원두) - 5명 모집, 3일 후 오후 3시, 1층 로비
+(30, 5, NOW() + INTERVAL '3 days' + INTERVAL '3 hours', '1층 로비', '{"category": "공구"}', NOW() - INTERVAL '3 hours', NOW());
 
 -- ZIP 생활 (2개)
-INSERT INTO posts ("authorId", "buildingId", "boardType", title, content, "imageUrls", "likeCount", "commentCount", "viewCount", "hotScore", "isHot", "createdAt", "updatedAt") VALUES
-                                                                                                                                                                                    (9, 3, 'lifestyle', '🌐 인터넷 속도 느린 분?', 'Wi-Fi 속도가 너무 느려요', NULL, 12, 7, 35, 19.0, false, NOW() - INTERVAL '1 hour', NOW()),
-                                                                                                                                                                                    (10, 3, 'lifestyle', '🔑 출입문 고장', '1층 출입문 자동문이 안 닫혀요', NULL, 10, 5, 28, 15.0, false, NOW() - INTERVAL '2 hours', NOW());
+INSERT INTO posts ("authorId", "buildingId", "boardType", title, content, status, "isCommercial", "likeCount", "commentCount", "viewCount", "hotScore", "isHot", "createdAt", "updatedAt") VALUES
+                                                                                                                                                                                    (9, 3, 'lifestyle', '🌐 인터넷 속도 느린 분?', 'Wi-Fi 속도가 너무 느려요', 'active', false, 12, 7, 35, 19.0, false, NOW() - INTERVAL '1 hour', NOW()),
+                                                                                                                                                                                    (10, 3, 'lifestyle', '🔑 출입문 고장', '1층 출입문 자동문이 안 닫혀요', 'active', false, 10, 5, 28, 15.0, false, NOW() - INTERVAL '2 hours', NOW());
 
 -- 잡담 (1개)
-INSERT INTO posts ("authorId", "buildingId", "boardType", title, content, "imageUrls", "likeCount", "commentCount", "viewCount", "hotScore", "isHot", "createdAt", "updatedAt") VALUES
-    (9, 3, 'chat', '🎮 게임 같이 하실 분', '발로란트 같이 해요', NULL, 7, 4, 22, 11.0, false, NOW() - INTERVAL '3 hours', NOW());
+INSERT INTO posts ("authorId", "buildingId", "boardType", title, content, status, "isCommercial", "likeCount", "commentCount", "viewCount", "hotScore", "isHot", "createdAt", "updatedAt") VALUES
+    (9, 3, 'chat', '🎮 게임 같이 하실 분', '발로란트 같이 해요', 'active', false, 7, 4, 22, 11.0, false, NOW() - INTERVAL '3 hours', NOW());
 
 -- 4. 댓글 데이터 (건물 1의 인기 게시글 중심)
 -- 다른 동에 사는 사람들이 서로 댓글 교류
@@ -268,55 +306,147 @@ INSERT INTO comments ("postId", "authorId", content, "parentCommentId", "likeCou
                                                                                                                    (17, 5, '저도 키우고 싶어요', NULL, 1, NOW() - INTERVAL '15 minutes', NOW()),
                                                                                                                    (17, 1, '치즈냥이 건강하면 좋겠어요', NULL, 3, NOW() - INTERVAL '10 minutes', NOW());
 
--- 5. 좋아요 데이터
+-- 5. 게시글 좋아요 데이터 (post_likes 테이블)
 -- 같은 단지 내 다른 동 사람들이 서로의 글에 좋아요
-INSERT INTO likes ("userId", "targetType", "targetId", "createdAt") VALUES
+INSERT INTO post_likes ("userId", "postId", "createdAt") VALUES
 -- 게시글 1 (치킨 - 101동 글) - 모든 동 사람들이 좋아요
-(2, 'post', 1, NOW() - INTERVAL '5 minutes'),
-(3, 'post', 1, NOW() - INTERVAL '4 minutes'),
-(4, 'post', 1, NOW() - INTERVAL '3 minutes'),
-(5, 'post', 1, NOW() - INTERVAL '2 minutes'),
-(1, 'post', 1, NOW() - INTERVAL '1 minute'),
+(2, 1, NOW() - INTERVAL '5 minutes'),
+(3, 1, NOW() - INTERVAL '4 minutes'),
+(4, 1, NOW() - INTERVAL '3 minutes'),
+(5, 1, NOW() - INTERVAL '2 minutes'),
+(1, 1, NOW() - INTERVAL '1 minute'),
 
 -- 게시글 3 (피자 - 101동 글)
-(1, 'post', 3, NOW() - INTERVAL '1 hour'),
-(2, 'post', 3, NOW() - INTERVAL '55 minutes'),
-(3, 'post', 3, NOW() - INTERVAL '50 minutes'),
-(4, 'post', 3, NOW() - INTERVAL '45 minutes'),
-(5, 'post', 3, NOW() - INTERVAL '40 minutes'),
+(1, 3, NOW() - INTERVAL '1 hour'),
+(2, 3, NOW() - INTERVAL '55 minutes'),
+(3, 3, NOW() - INTERVAL '50 minutes'),
+(4, 3, NOW() - INTERVAL '45 minutes'),
+(5, 3, NOW() - INTERVAL '40 minutes'),
 
 -- 게시글 12 (엘베 - 102동 글)
-(1, 'post', 12, NOW() - INTERVAL '30 minutes'),
-(2, 'post', 12, NOW() - INTERVAL '28 minutes'),
-(3, 'post', 12, NOW() - INTERVAL '26 minutes'),
-(4, 'post', 12, NOW() - INTERVAL '24 minutes'),
-(5, 'post', 12, NOW() - INTERVAL '22 minutes'),
+(1, 12, NOW() - INTERVAL '30 minutes'),
+(2, 12, NOW() - INTERVAL '28 minutes'),
+(3, 12, NOW() - INTERVAL '26 minutes'),
+(4, 12, NOW() - INTERVAL '24 minutes'),
+(5, 12, NOW() - INTERVAL '22 minutes'),
 
 -- 게시글 17 (고양이 - 102동 글)
-(1, 'post', 17, NOW() - INTERVAL '1 hour'),
-(2, 'post', 17, NOW() - INTERVAL '58 minutes'),
-(3, 'post', 17, NOW() - INTERVAL '56 minutes'),
-(4, 'post', 17, NOW() - INTERVAL '54 minutes'),
-(5, 'post', 17, NOW() - INTERVAL '52 minutes'),
+(1, 17, NOW() - INTERVAL '1 hour'),
+(2, 17, NOW() - INTERVAL '58 minutes'),
+(3, 17, NOW() - INTERVAL '56 minutes'),
+(4, 17, NOW() - INTERVAL '54 minutes'),
+(5, 17, NOW() - INTERVAL '52 minutes'),
 
 -- 게시글 21 (건물2 맥딜리버리)
-(6, 'post', 21, NOW() - INTERVAL '1 hour'),
-(7, 'post', 21, NOW() - INTERVAL '55 minutes'),
-(8, 'post', 21, NOW() - INTERVAL '50 minutes'),
+(6, 21, NOW() - INTERVAL '1 hour'),
+(7, 21, NOW() - INTERVAL '55 minutes'),
+(8, 21, NOW() - INTERVAL '50 minutes'),
 
 -- 게시글 29 (건물3 도시락)
-(9, 'post', 29, NOW() - INTERVAL '2 hours'),
-(10, 'post', 29, NOW() - INTERVAL '1 hour 55 minutes'),
+(9, 29, NOW() - INTERVAL '2 hours'),
+(10, 29, NOW() - INTERVAL '1 hour 55 minutes');
 
--- 댓글 좋아요
-(1, 'comment', 1, NOW() - INTERVAL '4 minutes'),
-(3, 'comment', 1, NOW() - INTERVAL '3 minutes'),
-(4, 'comment', 1, NOW() - INTERVAL '2 minutes'),
-(5, 'comment', 21, NOW() - INTERVAL '20 minutes'),
-(1, 'comment', 21, NOW() - INTERVAL '18 minutes'),
-(2, 'comment', 21, NOW() - INTERVAL '16 minutes'),
-(3, 'comment', 21, NOW() - INTERVAL '14 minutes'),
-(4, 'comment', 21, NOW() - INTERVAL '12 minutes');
+-- 6. 같이 사요 게시글 참여자 데이터 (post_participants)
+-- 글쓴이는 PostParticipant에 추가하지 않음 (항상 참여자로 간주)
+-- 게시글 1 (치킨) - 2명 참여 (글쓴이 제외)
+INSERT INTO post_participants ("postId", "userId", "joinedAt", "createdAt", "updatedAt") VALUES
+(1, 2, NOW() - INTERVAL '4 minutes', NOW() - INTERVAL '4 minutes', NOW()),
+(1, 3, NOW() - INTERVAL '3 minutes', NOW() - INTERVAL '3 minutes', NOW())
+ON CONFLICT ("postId", "userId") DO NOTHING;
+
+-- 게시글 3 (피자) - 3명 참여 (글쓴이 제외)
+INSERT INTO post_participants ("postId", "userId", "joinedAt", "createdAt", "updatedAt") VALUES
+(3, 4, NOW() - INTERVAL '55 minutes', NOW() - INTERVAL '55 minutes', NOW()),
+(3, 5, NOW() - INTERVAL '50 minutes', NOW() - INTERVAL '50 minutes', NOW()),
+(3, 1, NOW() - INTERVAL '45 minutes', NOW() - INTERVAL '45 minutes', NOW())
+ON CONFLICT ("postId", "userId") DO NOTHING;
+
+-- 게시글 6 (족발) - 1명 참여 (글쓴이 제외)
+INSERT INTO post_participants ("postId", "userId", "joinedAt", "createdAt", "updatedAt") VALUES
+(6, 2, NOW() - INTERVAL '3 hours 50 minutes', NOW() - INTERVAL '3 hours 50 minutes', NOW())
+ON CONFLICT ("postId", "userId") DO NOTHING;
+
+-- 7. 채팅방 데이터 (chat_rooms) - 같이 사요 게시글에 대한 채팅방
+INSERT INTO chat_rooms ("buildingId", "roomType", "postId", "createdBy", "createdAt", "updatedAt") VALUES
+-- 게시글 1 (치킨) - 참여자가 있는 경우만 채팅방 생성
+(1, 'TOPIC', 1, 1, NOW() - INTERVAL '5 minutes', NOW()),
+-- 게시글 3 (피자)
+(1, 'TOPIC', 3, 3, NOW() - INTERVAL '1 hour', NOW()),
+-- 게시글 6 (족발)
+(1, 'TOPIC', 6, 1, NOW() - INTERVAL '4 hours', NOW());
+
+-- 8. 채팅방 멤버 데이터 (chat_room_members) - 참여자들을 채팅방에 추가
+-- 게시글 1 (치킨) - 글쓴이 + 참여자 2명
+INSERT INTO chat_room_members ("roomId", "userId", "joinedAt", "createdAt") VALUES
+(1, 1, NOW() - INTERVAL '5 minutes', NOW() - INTERVAL '5 minutes'), -- 글쓴이
+(1, 2, NOW() - INTERVAL '4 minutes', NOW() - INTERVAL '4 minutes'), -- 참여자
+(1, 3, NOW() - INTERVAL '3 minutes', NOW() - INTERVAL '3 minutes') -- 참여자
+ON CONFLICT ("roomId", "userId") DO NOTHING;
+
+-- 게시글 3 (피자) - 글쓴이 + 참여자 3명
+INSERT INTO chat_room_members ("roomId", "userId", "joinedAt", "createdAt") VALUES
+(2, 3, NOW() - INTERVAL '1 hour', NOW() - INTERVAL '1 hour'), -- 글쓴이
+(2, 4, NOW() - INTERVAL '55 minutes', NOW() - INTERVAL '55 minutes'), -- 참여자
+(2, 5, NOW() - INTERVAL '50 minutes', NOW() - INTERVAL '50 minutes'), -- 참여자
+(2, 1, NOW() - INTERVAL '45 minutes', NOW() - INTERVAL '45 minutes') -- 참여자
+ON CONFLICT ("roomId", "userId") DO NOTHING;
+
+-- 게시글 6 (족발) - 글쓴이 + 참여자 1명
+INSERT INTO chat_room_members ("roomId", "userId", "joinedAt", "createdAt") VALUES
+(3, 1, NOW() - INTERVAL '4 hours', NOW() - INTERVAL '4 hours'), -- 글쓴이
+(3, 2, NOW() - INTERVAL '3 hours 50 minutes', NOW() - INTERVAL '3 hours 50 minutes') -- 참여자
+ON CONFLICT ("roomId", "userId") DO NOTHING;
+
+-- 6. 같이 사요 게시글 참여자 데이터 (post_participants)
+-- 글쓴이는 PostParticipant에 추가하지 않음 (항상 참여자로 간주)
+-- 게시글 1 (치킨) - 2명 참여 (글쓴이 제외)
+INSERT INTO post_participants ("postId", "userId", "joinedAt", "createdAt", "updatedAt") VALUES
+(1, 2, NOW() - INTERVAL '4 minutes', NOW() - INTERVAL '4 minutes', NOW()),
+(1, 3, NOW() - INTERVAL '3 minutes', NOW() - INTERVAL '3 minutes', NOW())
+ON CONFLICT ("postId", "userId") DO NOTHING;
+
+-- 게시글 3 (피자) - 3명 참여 (글쓴이 제외)
+INSERT INTO post_participants ("postId", "userId", "joinedAt", "createdAt", "updatedAt") VALUES
+(3, 4, NOW() - INTERVAL '55 minutes', NOW() - INTERVAL '55 minutes', NOW()),
+(3, 5, NOW() - INTERVAL '50 minutes', NOW() - INTERVAL '50 minutes', NOW()),
+(3, 1, NOW() - INTERVAL '45 minutes', NOW() - INTERVAL '45 minutes', NOW())
+ON CONFLICT ("postId", "userId") DO NOTHING;
+
+-- 게시글 6 (족발) - 1명 참여 (글쓴이 제외)
+INSERT INTO post_participants ("postId", "userId", "joinedAt", "createdAt", "updatedAt") VALUES
+(6, 2, NOW() - INTERVAL '3 hours 50 minutes', NOW() - INTERVAL '3 hours 50 minutes', NOW())
+ON CONFLICT ("postId", "userId") DO NOTHING;
+
+-- 7. 채팅방 데이터 (chat_rooms) - 같이 사요 게시글에 대한 채팅방
+INSERT INTO chat_rooms ("buildingId", "roomType", "postId", "createdBy", "createdAt", "updatedAt") VALUES
+-- 게시글 1 (치킨) - 참여자가 있는 경우만 채팅방 생성
+(1, 'TOPIC', 1, 1, NOW() - INTERVAL '5 minutes', NOW()),
+-- 게시글 3 (피자)
+(1, 'TOPIC', 3, 3, NOW() - INTERVAL '1 hour', NOW()),
+-- 게시글 6 (족발)
+(1, 'TOPIC', 6, 1, NOW() - INTERVAL '4 hours', NOW());
+
+-- 8. 채팅방 멤버 데이터 (chat_room_members) - 참여자들을 채팅방에 추가
+-- 게시글 1 (치킨) - 글쓴이 + 참여자 2명
+INSERT INTO chat_room_members ("roomId", "userId", "joinedAt", "createdAt") VALUES
+(1, 1, NOW() - INTERVAL '5 minutes', NOW() - INTERVAL '5 minutes'), -- 글쓴이
+(1, 2, NOW() - INTERVAL '4 minutes', NOW() - INTERVAL '4 minutes'), -- 참여자
+(1, 3, NOW() - INTERVAL '3 minutes', NOW() - INTERVAL '3 minutes') -- 참여자
+ON CONFLICT ("roomId", "userId") DO NOTHING;
+
+-- 게시글 3 (피자) - 글쓴이 + 참여자 3명
+INSERT INTO chat_room_members ("roomId", "userId", "joinedAt", "createdAt") VALUES
+(2, 3, NOW() - INTERVAL '1 hour', NOW() - INTERVAL '1 hour'), -- 글쓴이
+(2, 4, NOW() - INTERVAL '55 minutes', NOW() - INTERVAL '55 minutes'), -- 참여자
+(2, 5, NOW() - INTERVAL '50 minutes', NOW() - INTERVAL '50 minutes'), -- 참여자
+(2, 1, NOW() - INTERVAL '45 minutes', NOW() - INTERVAL '45 minutes') -- 참여자
+ON CONFLICT ("roomId", "userId") DO NOTHING;
+
+-- 게시글 6 (족발) - 글쓴이 + 참여자 1명
+INSERT INTO chat_room_members ("roomId", "userId", "joinedAt", "createdAt") VALUES
+(3, 1, NOW() - INTERVAL '4 hours', NOW() - INTERVAL '4 hours'), -- 글쓴이
+(3, 2, NOW() - INTERVAL '3 hours 50 minutes', NOW() - INTERVAL '3 hours 50 minutes') -- 참여자
+ON CONFLICT ("roomId", "userId") DO NOTHING;
 
 -- ============================================
 -- 실행 순서:
@@ -342,6 +472,9 @@ INSERT INTO likes ("userId", "targetType", "targetId", "createdAt") VALUES
 -- - 비밀번호는 모두 'password123'
 -- - buildingType은 enum: APARTMENT, OFFICETEL, VILLA
 -- - buildingVerificationStatus는 enum: PENDING, VERIFIED, REJECTED
+-- - posts 테이블의 boardType은 enum: togather, share, lifestyle, chat, market
+-- - posts 테이블의 status는 enum: active, closed, deleted
+-- - 게시글 좋아요는 post_likes 테이블 사용 (userId, postId)
 -- ============================================
 
 
@@ -422,50 +555,70 @@ INSERT INTO building_memberships ("userId", "buildingId", status, "joinedAt", "c
 -- ============================================
 
 -- 같이 사요 (3개)
-INSERT INTO posts ("authorId", "buildingId", "boardType", title, content, "imageUrls", "likeCount", "commentCount", "viewCount", "hotScore", "isHot", "createdAt", "updatedAt") VALUES
-                                                                                                                                                                                    (11, 6, 'togather', '🍱 점심 도시락 같이 주문해요', '샐러디 단체 주문하면 배달비 무료예요. 같이 시킬 분?', NULL, 9, 4, 32, 13.0, false, NOW() - INTERVAL '2 hours', NOW()),
-                                                                                                                                                                                    (12, 6, 'togather', '☕️ 원두커피 공동구매', '스타벅스 원두 1kg씩 나눠 살까요?', NULL, 7, 3, 25, 10.0, false, NOW() - INTERVAL '3 hours', NOW()),
-                                                                                                                                                                                    (13, 6, 'togather', '🍕 저녁 피자 같이 시켜요', '배달비 나눠요. 도미노 피자 생각 중!', NULL, 11, 6, 38, 17.0, false, NOW() - INTERVAL '1 hour', NOW());
+INSERT INTO posts ("authorId", "buildingId", "boardType", title, content, status, "isCommercial", "likeCount", "commentCount", "viewCount", "hotScore", "isHot", "createdAt", "updatedAt") VALUES
+                                                                                                                                                                                    (11, 6, 'togather', '🍱 점심 도시락 같이 주문해요', '샐러디 단체 주문하면 배달비 무료예요. 같이 시킬 분?', 'active', false, 9, 4, 32, 13.0, false, NOW() - INTERVAL '2 hours', NOW()),
+                                                                                                                                                                                    (12, 6, 'togather', '☕️ 원두커피 공동구매', '스타벅스 원두 1kg씩 나눠 살까요?', 'active', false, 7, 3, 25, 10.0, false, NOW() - INTERVAL '3 hours', NOW()),
+                                                                                                                                                                                    (13, 6, 'togather', '🍕 저녁 피자 같이 시켜요', '배달비 나눠요. 도미노 피자 생각 중!', 'active', false, 11, 6, 38, 17.0, false, NOW() - INTERVAL '1 hour', NOW());
+
+-- 여의도 유화증권 같이 사요 게시글 메타 데이터
+INSERT INTO post_meta ("postId", quantity, deadline, "locationDetail", "extraData", "createdAt", "updatedAt") VALUES
+-- 게시글 30 (도시락) - 3명 모집, 오늘 오후 12시, 1층 로비
+(30, 3, NOW() + INTERVAL '30 minutes', '1층 로비', '{"category": "배달"}', NOW() - INTERVAL '2 hours', NOW()),
+-- 게시글 31 (원두커피) - 4명 모집, 2일 후 오후 2시, 1층 로비
+(31, 4, NOW() + INTERVAL '2 days' + INTERVAL '2 hours', '1층 로비', '{"category": "공구"}', NOW() - INTERVAL '3 hours', NOW()),
+-- 게시글 33 (피자) - 2명 모집, 오늘 오후 7시, 1층 로비
+(33, 2, NOW() + INTERVAL '1 hour', '1층 로비', '{"category": "배달"}', NOW() - INTERVAL '1 hour', NOW());
 
 -- 나눔 (2개)
-INSERT INTO posts ("authorId", "buildingId", "boardType", title, content, "imageUrls", "likeCount", "commentCount", "viewCount", "hotScore", "isHot", "createdAt", "updatedAt") VALUES
-                                                                                                                                                                                    (11, 6, 'share', '📚 책 나눔합니다', '소설책 몇 권 드려요. 필요하신 분 연락주세요', NULL, 6, 2, 20, 8.0, false, NOW() - INTERVAL '4 hours', NOW()),
-                                                                                                                                                                                    (12, 6, 'share', '🪴 화분 나눔해요', '이사 가면서 못 가져가는 화분 나눔합니다', NULL, 8, 4, 28, 12.0, false, NOW() - INTERVAL '5 hours', NOW());
+INSERT INTO posts ("authorId", "buildingId", "boardType", title, content, status, "isCommercial", "likeCount", "commentCount", "viewCount", "hotScore", "isHot", "createdAt", "updatedAt") VALUES
+                                                                                                                                                                                    (11, 6, 'share', '📚 책 나눔합니다', '소설책 몇 권 드려요. 필요하신 분 연락주세요', 'active', false, 6, 2, 20, 8.0, false, NOW() - INTERVAL '4 hours', NOW()),
+                                                                                                                                                                                    (12, 6, 'share', '🪴 화분 나눔해요', '이사 가면서 못 가져가는 화분 나눔합니다', 'active', false, 8, 4, 28, 12.0, false, NOW() - INTERVAL '5 hours', NOW());
 
 -- ZIP 생활 (2개)
-INSERT INTO posts ("authorId", "buildingId", "boardType", title, content, "imageUrls", "likeCount", "commentCount", "viewCount", "hotScore", "isHot", "createdAt", "updatedAt") VALUES
-                                                                                                                                                                                    (11, 6, 'lifestyle', '🔑 출입문 비밀번호 변경', '1층 출입문 비밀번호 언제 변경됐나요?', NULL, 10, 5, 30, 15.0, false, NOW() - INTERVAL '2 hours', NOW()),
-                                                                                                                                                                                    (13, 6, 'lifestyle', '📦 택배함 위치 문의', '택배함이 어디에 있나요? 처음 와서 잘 모르겠어요', NULL, 9, 4, 26, 13.0, false, NOW() - INTERVAL '3 hours', NOW());
+INSERT INTO posts ("authorId", "buildingId", "boardType", title, content, status, "isCommercial", "likeCount", "commentCount", "viewCount", "hotScore", "isHot", "createdAt", "updatedAt") VALUES
+                                                                                                                                                                                    (11, 6, 'lifestyle', '🔑 출입문 비밀번호 변경', '1층 출입문 비밀번호 언제 변경됐나요?', 'active', false, 10, 5, 30, 15.0, false, NOW() - INTERVAL '2 hours', NOW()),
+                                                                                                                                                                                    (13, 6, 'lifestyle', '📦 택배함 위치 문의', '택배함이 어디에 있나요? 처음 와서 잘 모르겠어요', 'active', false, 9, 4, 26, 13.0, false, NOW() - INTERVAL '3 hours', NOW());
 
 -- 잡담 (1개)
-INSERT INTO posts ("authorId", "buildingId", "boardType", title, content, "imageUrls", "likeCount", "commentCount", "viewCount", "hotScore", "isHot", "createdAt", "updatedAt") VALUES
-    (12, 6, 'chat', '🏃 여의도공원 조깅 같이 하실 분', '아침에 여의도공원에서 조깅 같이 하실 분 모집해요!', NULL, 8, 3, 24, 11.0, false, NOW() - INTERVAL '4 hours', NOW());
+INSERT INTO posts ("authorId", "buildingId", "boardType", title, content, status, "isCommercial", "likeCount", "commentCount", "viewCount", "hotScore", "isHot", "createdAt", "updatedAt") VALUES
+    (12, 6, 'chat', '🏃 여의도공원 조깅 같이 하실 분', '아침에 여의도공원에서 조깅 같이 하실 분 모집해요!', 'active', false, 8, 3, 24, 11.0, false, NOW() - INTERVAL '4 hours', NOW());
 
 -- ============================================
 -- 목동 526-11 (buildingId=7) - 10개 게시글
 -- ============================================
 
 -- 같이 사요 (4개)
-INSERT INTO posts ("authorId", "buildingId", "boardType", title, content, "imageUrls", "likeCount", "commentCount", "viewCount", "hotScore", "isHot", "createdAt", "updatedAt") VALUES
-                                                                                                                                                                                    (14, 7, 'togather', '🍗 치킨 같이 시킬 분 (201동)', '교촌치킨 2마리 시키면 할인돼요. 같이 시킬 분?', NULL, 14, 7, 42, 21.0, true, NOW() - INTERVAL '1 hour', NOW()),
-                                                                                                                                                                                    (15, 7, 'togather', '🥤 편의점 행사 같이 해요 (202동)', 'CU 2+1 행사 중이래요. 같이 사실 분?', NULL, 12, 5, 36, 17.0, false, NOW() - INTERVAL '2 hours', NOW()),
-                                                                                                                                                                                    (16, 7, 'togather', '🍕 피자 공동구매 (201동)', '피자헛 2판 시키면 배달비 무료예요', NULL, 16, 9, 48, 25.0, true, NOW() - INTERVAL '30 minutes', NOW()),
-                                                                                                                                                                                    (17, 7, 'togather', '🥩 고기 같이 사요 (203동)', '마트에서 고기 대량 구매하실 분?', NULL, 10, 4, 30, 14.0, false, NOW() - INTERVAL '3 hours', NOW());
+INSERT INTO posts ("authorId", "buildingId", "boardType", title, content, status, "isCommercial", "likeCount", "commentCount", "viewCount", "hotScore", "isHot", "createdAt", "updatedAt") VALUES
+                                                                                                                                                                                    (14, 7, 'togather', '🍗 치킨 같이 시킬 분 (201동)', '교촌치킨 2마리 시키면 할인돼요. 같이 시킬 분?', 'active', false, 14, 7, 42, 21.0, true, NOW() - INTERVAL '1 hour', NOW()),
+                                                                                                                                                                                    (15, 7, 'togather', '🥤 편의점 행사 같이 해요 (202동)', 'CU 2+1 행사 중이래요. 같이 사실 분?', 'active', false, 12, 5, 36, 17.0, false, NOW() - INTERVAL '2 hours', NOW()),
+                                                                                                                                                                                    (16, 7, 'togather', '🍕 피자 공동구매 (201동)', '피자헛 2판 시키면 배달비 무료예요', 'active', false, 16, 9, 48, 25.0, true, NOW() - INTERVAL '30 minutes', NOW()),
+                                                                                                                                                                                    (17, 7, 'togather', '🥩 고기 같이 사요 (203동)', '마트에서 고기 대량 구매하실 분?', 'active', false, 10, 4, 30, 14.0, false, NOW() - INTERVAL '3 hours', NOW());
+
+-- 목동 526-11 같이 사요 게시글 메타 데이터
+INSERT INTO post_meta ("postId", quantity, deadline, "locationDetail", "extraData", "createdAt", "updatedAt") VALUES
+-- 게시글 37 (치킨) - 3명 모집, 오늘 오후 7시, 201동 공동현관
+(37, 3, NOW() + INTERVAL '1 hour', '201동 공동현관', '{"category": "배달"}', NOW() - INTERVAL '1 hour', NOW()),
+-- 게시글 38 (편의점) - 2명 모집, 오늘 오후 6시, 202동 공동현관
+(38, 2, NOW() + INTERVAL '30 minutes', '202동 공동현관', '{"category": "공구"}', NOW() - INTERVAL '2 hours', NOW()),
+-- 게시글 39 (피자) - 4명 모집, 오늘 오후 7시, 201동 공동현관
+(39, 4, NOW() + INTERVAL '1 hour', '201동 공동현관', '{"category": "배달"}', NOW() - INTERVAL '30 minutes', NOW()),
+-- 게시글 40 (고기) - 3명 모집, 내일 오후 2시, 203동 공동현관
+(40, 3, NOW() + INTERVAL '1 day' + INTERVAL '2 hours', '203동 공동현관', '{"category": "공구"}', NOW() - INTERVAL '3 hours', NOW());
 
 -- 나눔 (3개)
-INSERT INTO posts ("authorId", "buildingId", "boardType", title, content, "imageUrls", "likeCount", "commentCount", "viewCount", "hotScore", "isHot", "createdAt", "updatedAt") VALUES
-                                                                                                                                                                                    (14, 7, 'share', '📦 아기 장난감 나눔 (201동)', '아이가 안 쓰는 장난감 나눔해요', NULL, 9, 3, 28, 12.0, false, NOW() - INTERVAL '4 hours', NOW()),
-                                                                                                                                                                                    (15, 7, 'share', '📚 책 나눔합니다 (202동)', '소설책 5권 정도 드려요', NULL, 7, 2, 22, 9.0, false, NOW() - INTERVAL '5 hours', NOW()),
-                                                                                                                                                                                    (16, 7, 'share', '🪴 화분 나눔 (201동)', '화분 몇 개 나눔해요', NULL, 8, 4, 26, 12.0, false, NOW() - INTERVAL '6 hours', NOW());
+INSERT INTO posts ("authorId", "buildingId", "boardType", title, content, status, "isCommercial", "likeCount", "commentCount", "viewCount", "hotScore", "isHot", "createdAt", "updatedAt") VALUES
+                                                                                                                                                                                    (14, 7, 'share', '📦 아기 장난감 나눔 (201동)', '아이가 안 쓰는 장난감 나눔해요', 'active', false, 9, 3, 28, 12.0, false, NOW() - INTERVAL '4 hours', NOW()),
+                                                                                                                                                                                    (15, 7, 'share', '📚 책 나눔합니다 (202동)', '소설책 5권 정도 드려요', 'active', false, 7, 2, 22, 9.0, false, NOW() - INTERVAL '5 hours', NOW()),
+                                                                                                                                                                                    (16, 7, 'share', '🪴 화분 나눔 (201동)', '화분 몇 개 나눔해요', 'active', false, 8, 4, 26, 12.0, false, NOW() - INTERVAL '6 hours', NOW());
 
 -- ZIP 생활 (2개)
-INSERT INTO posts ("authorId", "buildingId", "boardType", title, content, "imageUrls", "likeCount", "commentCount", "viewCount", "hotScore", "isHot", "createdAt", "updatedAt") VALUES
-                                                                                                                                                                                    (15, 7, 'lifestyle', '🛠 엘리베이터 점검 일정', '202동 엘리베이터 점검 언제 하나요?', NULL, 13, 8, 40, 21.0, false, NOW() - INTERVAL '1 hour', NOW()),
-                                                                                                                                                                                    (17, 7, 'lifestyle', '🚗 주차장 이용 문의', '203동 주차장 이용 방법 알려주세요', NULL, 11, 6, 34, 17.0, false, NOW() - INTERVAL '2 hours', NOW());
+INSERT INTO posts ("authorId", "buildingId", "boardType", title, content, status, "isCommercial", "likeCount", "commentCount", "viewCount", "hotScore", "isHot", "createdAt", "updatedAt") VALUES
+                                                                                                                                                                                    (15, 7, 'lifestyle', '🛠 엘리베이터 점검 일정', '202동 엘리베이터 점검 언제 하나요?', 'active', false, 13, 8, 40, 21.0, false, NOW() - INTERVAL '1 hour', NOW()),
+                                                                                                                                                                                    (17, 7, 'lifestyle', '🚗 주차장 이용 문의', '203동 주차장 이용 방법 알려주세요', 'active', false, 11, 6, 34, 17.0, false, NOW() - INTERVAL '2 hours', NOW());
 
 -- 잡담 (1개)
-INSERT INTO posts ("authorId", "buildingId", "boardType", title, content, "imageUrls", "likeCount", "commentCount", "viewCount", "hotScore", "isHot", "createdAt", "updatedAt") VALUES
-    (14, 7, 'chat', '🐱 단지 고양이 보신 분?', '목동공원 쪽에 고양이 보신 분 계신가요?', NULL, 15, 10, 45, 25.0, true, NOW() - INTERVAL '2 hours', NOW());
+INSERT INTO posts ("authorId", "buildingId", "boardType", title, content, status, "isCommercial", "likeCount", "commentCount", "viewCount", "hotScore", "isHot", "createdAt", "updatedAt") VALUES
+    (14, 7, 'chat', '🐱 단지 고양이 보신 분?', '목동공원 쪽에 고양이 보신 분 계신가요?', 'active', false, 15, 10, 45, 25.0, true, NOW() - INTERVAL '2 hours', NOW());
 
 -- ============================================
 -- 추가 댓글 데이터
@@ -501,34 +654,84 @@ INSERT INTO comments ("postId", "authorId", content, "parentCommentId", "likeCou
 (45, 17, '사진 찍으셨나요?', NULL, 1, NOW() - INTERVAL '1 hour 45 minutes', NOW());
 
 -- ============================================
--- 추가 좋아요 데이터
+-- 추가 게시글 좋아요 데이터 (post_likes 테이블)
 -- ============================================
 
-INSERT INTO likes ("userId", "targetType", "targetId", "createdAt") VALUES
+INSERT INTO post_likes ("userId", "postId", "createdAt") VALUES
 -- 여의도 유화증권 게시글 좋아요
-(12, 'post', 30, NOW() - INTERVAL '2 hours'),
-(13, 'post', 30, NOW() - INTERVAL '1 hour 55 minutes'),
-(11, 'post', 33, NOW() - INTERVAL '1 hour'),
-(12, 'post', 33, NOW() - INTERVAL '55 minutes'),
-(13, 'post', 33, NOW() - INTERVAL '50 minutes'),
+(12, 30, NOW() - INTERVAL '2 hours'),
+(13, 30, NOW() - INTERVAL '1 hour 55 minutes'),
+(11, 33, NOW() - INTERVAL '1 hour'),
+(12, 33, NOW() - INTERVAL '55 minutes'),
+(13, 33, NOW() - INTERVAL '50 minutes'),
 
 -- 목동 526-11 게시글 좋아요
-(15, 'post', 37, NOW() - INTERVAL '1 hour'),
-(16, 'post', 37, NOW() - INTERVAL '55 minutes'),
-(17, 'post', 37, NOW() - INTERVAL '50 minutes'),
-(14, 'post', 37, NOW() - INTERVAL '45 minutes'),
-(15, 'post', 39, NOW() - INTERVAL '30 minutes'),
-(16, 'post', 39, NOW() - INTERVAL '25 minutes'),
-(17, 'post', 39, NOW() - INTERVAL '20 minutes'),
-(14, 'post', 39, NOW() - INTERVAL '15 minutes'),
-(15, 'post', 45, NOW() - INTERVAL '2 hours'),
-(16, 'post', 45, NOW() - INTERVAL '1 hour 55 minutes'),
-(17, 'post', 45, NOW() - INTERVAL '1 hour 50 minutes'),
-(14, 'post', 45, NOW() - INTERVAL '1 hour 45 minutes'),
+(15, 37, NOW() - INTERVAL '1 hour'),
+(16, 37, NOW() - INTERVAL '55 minutes'),
+(17, 37, NOW() - INTERVAL '50 minutes'),
+(14, 37, NOW() - INTERVAL '45 minutes'),
+(15, 39, NOW() - INTERVAL '30 minutes'),
+(16, 39, NOW() - INTERVAL '25 minutes'),
+(17, 39, NOW() - INTERVAL '20 minutes'),
+(14, 39, NOW() - INTERVAL '15 minutes'),
+(15, 45, NOW() - INTERVAL '2 hours'),
+(16, 45, NOW() - INTERVAL '1 hour 55 minutes'),
+(17, 45, NOW() - INTERVAL '1 hour 50 minutes'),
+(14, 45, NOW() - INTERVAL '1 hour 45 minutes');
 
--- 댓글 좋아요
-(12, 'comment', 34, NOW() - INTERVAL '1 hour 55 minutes'),
-(13, 'comment', 35, NOW() - INTERVAL '1 hour 50 minutes'),
-(15, 'comment', 46, NOW() - INTERVAL '55 minutes'),
-(16, 'comment', 46, NOW() - INTERVAL '50 minutes'),
-(17, 'comment', 46, NOW() - INTERVAL '45 minutes');
+-- ============================================
+-- 추가 참여자 및 채팅방 데이터
+-- ============================================
+
+-- 목동 526-11 게시글 참여자 데이터
+-- 게시글 37 (치킨) - 2명 참여 (글쓴이 제외)
+INSERT INTO post_participants ("postId", "userId", "joinedAt", "createdAt", "updatedAt") VALUES
+(37, 15, NOW() - INTERVAL '55 minutes', NOW() - INTERVAL '55 minutes', NOW()),
+(37, 16, NOW() - INTERVAL '50 minutes', NOW() - INTERVAL '50 minutes', NOW())
+ON CONFLICT ("postId", "userId") DO NOTHING;
+
+-- 게시글 39 (피자) - 2명 참여 (글쓴이 제외)
+INSERT INTO post_participants ("postId", "userId", "joinedAt", "createdAt", "updatedAt") VALUES
+(39, 15, NOW() - INTERVAL '25 minutes', NOW() - INTERVAL '25 minutes', NOW()),
+(39, 17, NOW() - INTERVAL '20 minutes', NOW() - INTERVAL '20 minutes', NOW())
+ON CONFLICT ("postId", "userId") DO NOTHING;
+
+-- 목동 526-11 채팅방 데이터
+INSERT INTO chat_rooms ("buildingId", "roomType", "postId", "createdBy", "createdAt", "updatedAt") VALUES
+-- 게시글 37 (치킨)
+(7, 'TOPIC', 37, 14, NOW() - INTERVAL '1 hour', NOW()),
+-- 게시글 39 (피자)
+(7, 'TOPIC', 39, 16, NOW() - INTERVAL '30 minutes', NOW());
+
+-- 목동 526-11 채팅방 멤버 데이터
+-- 게시글 37 (치킨) - 글쓴이 + 참여자 2명
+INSERT INTO chat_room_members ("roomId", "userId", "joinedAt", "createdAt") VALUES
+(4, 14, NOW() - INTERVAL '1 hour', NOW() - INTERVAL '1 hour'), -- 글쓴이
+(4, 15, NOW() - INTERVAL '55 minutes', NOW() - INTERVAL '55 minutes'), -- 참여자
+(4, 16, NOW() - INTERVAL '50 minutes', NOW() - INTERVAL '50 minutes') -- 참여자
+ON CONFLICT ("roomId", "userId") DO NOTHING;
+
+-- 게시글 39 (피자) - 글쓴이 + 참여자 2명
+INSERT INTO chat_room_members ("roomId", "userId", "joinedAt", "createdAt") VALUES
+(5, 16, NOW() - INTERVAL '30 minutes', NOW() - INTERVAL '30 minutes'), -- 글쓴이
+(5, 15, NOW() - INTERVAL '25 minutes', NOW() - INTERVAL '25 minutes'), -- 참여자
+(5, 17, NOW() - INTERVAL '20 minutes', NOW() - INTERVAL '20 minutes') -- 참여자
+ON CONFLICT ("roomId", "userId") DO NOTHING;
+
+-- 여의도 유화증권 게시글 참여자 데이터
+-- 게시글 33 (피자) - 1명 참여 (글쓴이 제외)
+INSERT INTO post_participants ("postId", "userId", "joinedAt", "createdAt", "updatedAt") VALUES
+(33, 12, NOW() - INTERVAL '55 minutes', NOW() - INTERVAL '55 minutes', NOW())
+ON CONFLICT ("postId", "userId") DO NOTHING;
+
+-- 여의도 유화증권 채팅방 데이터
+INSERT INTO chat_rooms ("buildingId", "roomType", "postId", "createdBy", "createdAt", "updatedAt") VALUES
+-- 게시글 33 (피자)
+(6, 'TOPIC', 33, 13, NOW() - INTERVAL '1 hour', NOW());
+
+-- 여의도 유화증권 채팅방 멤버 데이터
+-- 게시글 33 (피자) - 글쓴이 + 참여자 1명
+INSERT INTO chat_room_members ("roomId", "userId", "joinedAt", "createdAt") VALUES
+(6, 13, NOW() - INTERVAL '1 hour', NOW() - INTERVAL '1 hour'), -- 글쓴이
+(6, 12, NOW() - INTERVAL '55 minutes', NOW() - INTERVAL '55 minutes') -- 참여자
+ON CONFLICT ("roomId", "userId") DO NOTHING;

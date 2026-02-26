@@ -9,7 +9,7 @@ import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button, Card, CardContent, BottomSheet, BottomSheetContent } from '@ui/index'
 import { apiClient } from '@/lib/api-client'
-import { MapPin, Camera, Mail, CreditCard, CheckCircle } from 'lucide-react'
+import { MapPin, Camera, Mail, CreditCard, CheckCircle, ChevronLeft } from 'lucide-react'
 import { useAuthStore } from '@/stores/auth-store'
 
 type VerificationType = 'GPS' | 'POST_MAIL' | 'ID_CARD' | null
@@ -157,8 +157,9 @@ function VerifyBuildingContent() {
       {/* Header */}
       <header className="bg-surface border-b border-border">
         <div className="flex items-center h-14 px-4">
-          <button onClick={() => router.back()} className="text-text-primary">
-            ← 뒤로
+          <button onClick={() => router.back()} className="flex items-center gap-1 text-text-primary">
+            <ChevronLeft className="w-5 h-5" strokeWidth={1.5} />
+            <span>뒤로</span>
           </button>
         </div>
       </header>

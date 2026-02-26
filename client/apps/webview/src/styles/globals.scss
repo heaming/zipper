@@ -124,4 +124,58 @@
       background-color: #d1d1d1;
     }
   }
+
+  /* react-day-picker 드롭다운 스타일 */
+  :global(.rdp-dropdown),
+  :global(.rdp-dropdown_month),
+  :global(.rdp-dropdown_year) {
+    @apply h-7 px-2 pr-8 text-sm border border-border rounded-md bg-background text-text-primary appearance-none cursor-pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23999' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.5rem center;
+  }
+
+  /* 드롭다운 중복 표시 숨기기 - select 다음에 오는 span 숨김 */
+  :global(.rdp-dropdown_root > span:not(:first-child)) {
+    display: none !important;
+  }
+
+  :global(.rdp-dropdown_icon) {
+    display: none !important;
+  }
+
+  /* 선택된 날짜 초록색 강제 적용 */
+  :global(.rdp-day_selected),
+  :global(.rdp-day_selected:hover),
+  :global(.rdp-day_selected:focus),
+  :global(.rdp-day_selected.rdp-day_button) {
+    background-color: #4ccf89 !important;
+    color: white !important;
+  }
+
+  /* 오늘 날짜 초록색 강제 적용 */
+  :global(.rdp-day_today),
+  :global(.rdp-day_today.rdp-day_button) {
+    background-color: rgba(76, 207, 137, 0.1) !important;
+    color: #4ccf89 !important;
+    font-weight: 600 !important;
+    border: 1px solid #4ccf89 !important;
+  }
+
+  /* Sonner error 타입 확인 버튼 스타일 */
+  .error-toast [data-button],
+  .error-toast button[data-button],
+  .error-toast [data-sonner-button],
+  .error-toast button[data-sonner-button],
+  .error-toast [data-sonner-action],
+  .error-toast button[data-sonner-action] {
+    background-color: #fd6174 !important;
+    color: white !important;
+  }
+
+  /* Sonner error 타입 아이콘 색상 */
+  .error-toast svg,
+  .error-toast [data-icon] {
+    color: #fd6174 !important;
+  }
 }

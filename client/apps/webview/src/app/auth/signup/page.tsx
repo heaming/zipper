@@ -9,7 +9,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Button, Card, CardContent } from '@ui/index'
 import { apiClient } from '@/lib/api-client'
-import { Search, MapPin, Mail } from 'lucide-react'
+import { Search, MapPin, Mail, ChevronLeft } from 'lucide-react'
 import { useAuthStore } from '@/stores/auth-store'
 
 type SignupStep = 'basic' | 'verification' | 'address'
@@ -546,8 +546,9 @@ export default function SignupPage() {
       <header className="bg-surface border-b border-border">
         <div className="flex items-center h-14 px-4">
           {step === 'basic' ? (
-            <Link href="/" className="text-text-primary">
-              ← 뒤로
+            <Link href="/" className="flex items-center gap-1 text-text-primary">
+              <ChevronLeft className="w-5 h-5" strokeWidth={1.5} />
+              <span>뒤로</span>
             </Link>
           ) : step === 'verification' ? (
             <button 
@@ -564,9 +565,10 @@ export default function SignupPage() {
                 }
                 setStep('basic')
               }} 
-              className="text-text-primary"
+              className="flex items-center gap-1 text-text-primary"
             >
-              ← 뒤로
+              <ChevronLeft className="w-5 h-5" strokeWidth={1.5} />
+              <span>뒤로</span>
             </button>
           ) : (
             <button 
@@ -579,9 +581,10 @@ export default function SignupPage() {
                   setStep('basic')
                 }
               }} 
-              className="text-text-primary"
+              className="flex items-center gap-1 text-text-primary"
             >
-              ← 뒤로
+              <ChevronLeft className="w-5 h-5" strokeWidth={1.5} />
+              <span>뒤로</span>
             </button>
           )}
           <div className="flex-1 text-center">

@@ -7,27 +7,43 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Eye, Home as HomeIcon, MessageCircle, User, ArrowUp, Lock, MoreVertical, Pencil, Trash2, Flag, MapPin } from 'lucide-react'
+import { ArrowLeft, Eye, Home as HomeIcon, MessageCircle, User, ArrowUp, Lock, MoreVertical, Pencil, Trash2, Flag, MapPin, X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Card, CardContent, Button, Divider, Badge, BottomSheet, BottomSheetContent } from '@ui/index'
 import { CommunityTag, TAG_ICONS } from '@zipper/models/src/community'
 import { apiClient } from '@/lib/api-client'
 import { useAuthStore } from '@/stores/auth-store'
 import { cn } from '@/lib/utils'
+import { motion } from 'framer-motion'
+import { getTimeAgo } from '@/lib/utils'
+import { getBoardTypeLabel, getBoardTypeColor, getBoardTypeCommunityTag } from '@/features/community/utils/board-type.utils'
+import { TogetherPostDetail } from './_components/TogetherPostDetail'
+import { TogetherPostTag } from './_components/TogetherPostTag'
 
 interface Post {
   id: number
   title: string
   content: string
-  boardType: string
+  boardType?: string | null
+  tag?: string | null
   likeCount: number
   commentCount: number
   viewCount: number
   createdAt: string
   isLiked?: boolean
+  imageUrls?: string[]
   author?: {
     id: number
     nickname: string
   }
+  meta?: {
+    quantity?: number
+    deadline?: string
+    locationDetail?: string
+    extraData?: Record<string, any>
+  }
+  participantCount?: number
+  isParticipating?: boolean
+  chatRoomId?: number
 }
 
 interface Comment {
@@ -73,6 +89,12 @@ export default function PostDetailPage() {
   // 인증 관련 state
   const [showVerificationSheet, setShowVerificationSheet] = useState(false)
   
+  // 이미지 뷰어 관련 state
+  const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null)
+  const [touchStartX, setTouchStartX] = useState(0)
+  const [touchEndX, setTouchEndX] = useState(0)
+  const imageViewerRef = useRef<HTMLDivElement>(null)
+  
   // comments ref 동기화
   useEffect(() => {
     commentsRef.current = comments
@@ -81,6 +103,10 @@ export default function PostDetailPage() {
   const fetchPost = async () => {
     try {
       const data = await apiClient.getPost(Number(postId))
+      console.log('[PostDetail] Fetched post data:', data)
+      console.log('[PostDetail] Image URLs:', data.imageUrls)
+      console.log('[PostDetail] Meta data:', data.meta)
+      console.log('[PostDetail] ExtraData:', data.meta?.extraData)
       setPost(data)
       
       // 좋아요 상태 초기화
@@ -101,10 +127,8 @@ export default function PostDetailPage() {
       // 인증 관련 에러인 경우 Bottom Sheet 표시
       if (error?.message?.includes('인증') || error?.message?.includes('건물 인증')) {
         setShowVerificationSheet(true)
-      } else {
-        // 다른 에러는 그대로 표시
-        alert(error?.message || '게시글을 불러오는데 실패했습니다.')
       }
+      // 다른 에러는 조용히 처리 (alert 제거)
     } finally {
       setLoading(false)
     }
@@ -367,82 +391,80 @@ export default function PostDetailPage() {
     }
   }, [postId, isAuthenticated, router, fetchComments])
 
-  const getTimeAgo = (dateString: string) => {
-    const now = new Date()
-    const past = new Date(dateString)
-    const diffMs = now.getTime() - past.getTime()
-    const diffMins = Math.floor(diffMs / 60000)
-    const diffHours = Math.floor(diffMs / 3600000)
-    const diffDays = Math.floor(diffMs / 86400000)
+  const handleParticipantUpdate = useCallback((updates: { participantCount: number; isParticipating: boolean }) => {
+    setPost(prev => prev ? { ...prev, ...updates } : null)
+  }, [])
 
-    if (diffMins < 1) return '방금 전'
-    if (diffMins < 60) return `${diffMins}분 전`
-    if (diffHours < 24) return `${diffHours}시간 전`
-    if (diffDays === 1) return '어제'
-    if (diffDays < 7) return `${diffDays}일 전`
-    return past.toLocaleDateString()
+  const handlePreviousImage = () => {
+    if (!post?.imageUrls || selectedImageIndex === null) return
+    setSelectedImageIndex(
+      selectedImageIndex > 0 ? selectedImageIndex - 1 : post.imageUrls.length - 1
+    )
   }
 
-  const getBoardTypeLabel = (boardType: string) => {
-    const labels: Record<string, string> = {
-      togather: '같이 사요',
-      share: '나눔',
-      lifestyle: 'ZIP 생활',
-      chat: '잡담',
-      market: 'ZIP 마켓'
+  const handleNextImage = () => {
+    if (!post?.imageUrls || selectedImageIndex === null) return
+    setSelectedImageIndex(
+      selectedImageIndex < post.imageUrls.length - 1 ? selectedImageIndex + 1 : 0
+    )
+  }
+
+  const handleSwipe = () => {
+    if (!post?.imageUrls || selectedImageIndex === null) return
+    
+    const swipeThreshold = 50
+    const diff = touchStartX - touchEndX
+
+    if (Math.abs(diff) > swipeThreshold) {
+      if (diff > 0) {
+        // Swipe left - next image
+        handleNextImage()
+      } else {
+        // Swipe right - previous image
+        handlePreviousImage()
+      }
     }
-    return labels[boardType] || boardType
-  }
-
-  const getTagClass = (boardType: string) => {
-    return `tag-${boardType.toLowerCase()}`
-  }
-
-  const getBoardTypeCommunityTag = (boardType: string): CommunityTag => {
-    const mapping: Record<string, CommunityTag> = {
-      'togather': CommunityTag.TOGATHER,
-      'share': CommunityTag.SHARE,
-      'lifestyle': CommunityTag.LIFESTYLE,
-      'chat': CommunityTag.CHAT,
-      'market': CommunityTag.MARKET,
-      'all': CommunityTag.ALL
-    }
-    return mapping[boardType.toLowerCase()] || CommunityTag.ALL
   }
 
   if (!isAuthenticated) {
     return null
   }
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
-        <p className="text-text-secondary">로딩 중...</p>
-      </div>
-    )
-  }
-
-  if (!post) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-background gap-4">
-        <p className="text-text-secondary">게시글을 찾을 수 없습니다</p>
-        <Button onClick={() => router.back()}>돌아가기</Button>
-      </div>
-    )
+  if (!post || !post.boardType) {
+    return null
   }
 
   const tag = getBoardTypeCommunityTag(post.boardType)
   const Icon = TAG_ICONS[tag]
+  
+  const isTogather = post.boardType === 'togather'
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
+    <motion.div 
+      key={`post-${postId}`}
+      initial={{ x: '100%' }}
+      animate={{ x: 0 }}
+      exit={{ x: '100%' }}
+      className="flex flex-col min-h-screen bg-white"
+    >
       {/* Header */}
       <header className="bg-white border-b border-border sticky top-0 z-10">
-        <div className="flex items-center gap-3 px-4 py-3">
-          <button onClick={() => router.back()} className="touch-area">
-            <ArrowLeft className="w-5 h-5 text-text-primary" strokeWidth={1.5} />
+        <div className="flex items-center justify-between px-4 py-3">
+          <button onClick={() => router.back()} className="touch-area flex items-center gap-1">
+            <ChevronLeft className="w-5 h-5 text-text-primary" strokeWidth={1.5} />
+            <span className="text-sm text-text-primary">뒤로</span>
           </button>
-          <h1 className="text-xl font-bold text-text-primary">ZIPPER</h1>
+          <h1 className="text-xl font-bold text-text-primary absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
+            {Icon && (
+              <Icon 
+                className="w-5 h-5" 
+                strokeWidth={1.5}
+                style={{ color: getBoardTypeColor(post.boardType) }}
+              />
+            )}
+            <span>{getBoardTypeLabel(post.boardType)}</span>
+          </h1>
+          <div className="w-[60px]"></div>
         </div>
       </header>
 
@@ -450,13 +472,8 @@ export default function PostDetailPage() {
       <main className="flex-1">
         <Card className="rounded-none border-x-0">
           <CardContent className="p-4">
-            {/* Tag */}
-            <div className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[11px] bg-gray-50 mb-3">
-              {Icon && <Icon className={cn("w-2.5 h-2.5", getTagClass(post.boardType))} strokeWidth={1.5} />}
-              <span className="text-gray-400">
-                {getBoardTypeLabel(post.boardType)}
-              </span>
-            </div>
+            {/* Tag - 같이사요 게시글의 경우 배달|공구 태그만 표시 */}
+            {isTogather && <TogetherPostTag post={post} />}
 
             {/* Title */}
             <h2 className="text-xl font-bold text-text-primary mb-4">
@@ -478,12 +495,60 @@ export default function PostDetailPage() {
 
             <Divider />
 
+            {/* 같이사요 게시글: 만남장소 | 마감시간 및 모집인원 */}
+            {isTogather && (
+              <TogetherPostDetail 
+                post={post} 
+                postId={postId}
+                onParticipantUpdate={handleParticipantUpdate}
+              />
+            )}
+
             {/* Content */}
-            <div className="my-4 text-text-primary whitespace-pre-wrap">
+            <div className="my-4 text-text-primary whitespace-pre-wrap p-1">
               {post.content}
             </div>
 
             <Divider />
+
+            {/* Images Section */}
+            {post.imageUrls && post.imageUrls.length > 0 && (
+              <div className="my-4">
+                <div 
+                  className="flex gap-2 overflow-x-auto scrollbar-hide pb-2"
+                  style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                >
+                  {post.imageUrls.slice(0, 3).map((imageUrl, index) => (
+                    <div
+                      key={index}
+                      onClick={() => setSelectedImageIndex(index)}
+                      className="relative flex-shrink-0 w-24 h-24 rounded-lg overflow-hidden bg-gray-100 cursor-pointer hover:opacity-90 transition-opacity"
+                    >
+                      <img
+                        src={imageUrl}
+                        alt={`이미지 ${index + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  ))}
+                  {post.imageUrls.length > 3 && (
+                    <div
+                      onClick={() => setSelectedImageIndex(3)}
+                      className="relative flex-shrink-0 w-24 h-24 rounded-lg overflow-hidden bg-gray-100 cursor-pointer hover:opacity-90 transition-opacity flex items-center justify-center"
+                    >
+                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-10">
+                        <span className="text-white font-semibold text-sm">+{post.imageUrls.length - 3}</span>
+                      </div>
+                      <img
+                        src={post.imageUrls[3]}
+                        alt={`이미지 4`}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Engagement Section */}
             <div className="flex items-center justify-between mt-4">
@@ -513,7 +578,7 @@ export default function PostDetailPage() {
 
         {/* Comments Section */}
         <div className="mt-2 pb-40">
-          <div className="bg-surface px-4 py-3 border-b border-border">
+          <div className="bg-surface px-4 py-3 border-border">
             <h3 className="text-sm font-semibold text-text-primary flex items-center gap-2">
               <MessageCircle className="w-4 h-4" strokeWidth={1.5} />
               댓글 {totalComments || comments.reduce((total, comment) => total + 1 + (comment.replies?.length || 0), 0)}
@@ -835,6 +900,73 @@ export default function PostDetailPage() {
         </div>
       </div>
 
+      {/* Full Screen Image Viewer */}
+      {selectedImageIndex !== null && post.imageUrls && (
+        <div 
+          ref={imageViewerRef}
+          className="fixed inset-0 bg-black z-50 flex items-center justify-center"
+          onTouchStart={(e) => setTouchStartX(e.touches[0].clientX)}
+          onTouchEnd={(e) => {
+            setTouchEndX(e.changedTouches[0].clientX)
+            handleSwipe()
+          }}
+        >
+          <button
+            onClick={() => setSelectedImageIndex(null)}
+            className="absolute top-4 right-4 z-10 p-2 bg-black/50 rounded-full text-white hover:bg-black/70 transition-colors"
+          >
+            <X className="w-6 h-6" strokeWidth={2} />
+          </button>
+          
+          {post.imageUrls.length > 1 && (
+            <>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handlePreviousImage()
+                }}
+                className="absolute left-4 z-10 p-2 bg-black/50 rounded-full text-white hover:bg-black/70 transition-colors"
+              >
+                <ChevronLeft className="w-6 h-6" strokeWidth={2} />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleNextImage()
+                }}
+                className="absolute right-4 z-10 p-2 bg-black/50 rounded-full text-white hover:bg-black/70 transition-colors"
+              >
+                <ChevronRight className="w-6 h-6" strokeWidth={2} />
+              </button>
+            </>
+          )}
+          
+          <div className="relative w-full h-full flex items-center justify-center p-4">
+            <img
+              src={post.imageUrls[selectedImageIndex]}
+              alt={`이미지 ${selectedImageIndex + 1}`}
+              className="max-w-full max-h-full object-contain select-none"
+              draggable={false}
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+          
+          {post.imageUrls.length > 1 && (
+            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2">
+              {post.imageUrls.map((_, index) => (
+                <div
+                  key={index}
+                  className={cn(
+                    "h-2 rounded-full transition-all",
+                    index === selectedImageIndex ? "bg-white w-6" : "bg-white/50 w-2"
+                  )}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Verification Bottom Sheet */}
       <BottomSheet open={showVerificationSheet} onOpenChange={setShowVerificationSheet}>
         <BottomSheetContent>
@@ -877,6 +1009,6 @@ export default function PostDetailPage() {
           </div>
         </BottomSheetContent>
       </BottomSheet>
-    </div>
+    </motion.div>
   )
 }

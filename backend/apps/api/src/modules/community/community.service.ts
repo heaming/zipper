@@ -11,9 +11,14 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { Post, BoardType } from './domain/entities/post.entity';
 import { PostLike } from './domain/entities/post-like.entity';
 import { Comment } from './domain/entities/comment.entity';
+import { PostImage } from './domain/entities/post-image.entity';
+import { PostMeta } from './domain/entities/post-meta.entity';
+import { PostParticipant } from './domain/entities/post-participant.entity';
 import { BuildingMembership, MembershipStatus } from '../building/domain/entities/building-membership.entity';
 import { User } from '../auth/domain/entities/user.entity';
 import { BuildingVerificationStatus } from '../auth/domain/entities/building-verification.entity';
+import { ChatRoom, RoomType } from '../chat/domain/entities/chat-room.entity';
+import { ChatRoomMember } from '../chat/domain/entities/chat-room-member.entity';
 import { HotPostService } from './services/hot-post.service';
 import { ViewCountService } from './services/view-count.service';
 import { CreatePostDto } from './dto/create-post.dto';
@@ -40,6 +45,16 @@ export class CommunityService {
     private membershipRepository: Repository<BuildingMembership>,
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    @InjectRepository(PostImage)
+    private postImageRepository: Repository<PostImage>,
+    @InjectRepository(PostMeta)
+    private postMetaRepository: Repository<PostMeta>,
+    @InjectRepository(PostParticipant)
+    private postParticipantRepository: Repository<PostParticipant>,
+    @InjectRepository(ChatRoom)
+    private chatRoomRepository: Repository<ChatRoom>,
+    @InjectRepository(ChatRoomMember)
+    private chatRoomMemberRepository: Repository<ChatRoomMember>,
     private hotPostService: HotPostService,
     private viewCountService: ViewCountService,
     private eventEmitter: EventEmitter2,
@@ -86,10 +101,12 @@ export class CommunityService {
     }
 
     queryBuilder
+      .leftJoinAndSelect('post.author', 'author')
+      .leftJoinAndSelect('post.images', 'images')
       .orderBy('post.createdAt', 'DESC')
+      .addOrderBy('images.orderIndex', 'ASC')
       .skip((page - 1) * limit)
-      .take(limit)
-      .leftJoinAndSelect('post.author', 'author');
+      .take(limit);
 
     // 디버깅: 생성된 SQL 쿼리 확인
     const sql = queryBuilder.getSql();
@@ -139,11 +156,29 @@ export class CommunityService {
           },
         });
 
+        // 이미지 URL 배열 추출 (orderIndex 순서대로)
+        const imageUrls = post.images
+          ? post.images
+              .sort((a, b) => a.orderIndex - b.orderIndex)
+              .map((img) => img.imageUrl)
+          : [];
+
+        // 같이사요 게시글인 경우 참여자 수 계산
+        let participantCount: number | undefined;
+        if (post.boardType === BoardType.TOGATHER) {
+          const participantCountFromDB = await this.postParticipantRepository.count({
+            where: { postId: post.id },
+          });
+          // 글쓴이는 항상 참여자로 간주 (PostParticipant에 없어도)
+          // 따라서 항상 +1을 해줘야 함
+          participantCount = participantCountFromDB + 1;
+        }
+
         return {
           id: post.id,
           title: post.title,
           content: post.content,
-          imageUrls: post.imageUrls || [],
+          imageUrls,
           author: {
             id: post.authorId,
             nickname: author?.nickname || '익명',
@@ -154,6 +189,7 @@ export class CommunityService {
           commentCount: post.commentCount,
           viewCount: post.viewCount,
           isHot: post.isHot,
+          participantCount: post.boardType === BoardType.TOGATHER ? participantCount : undefined,
           createdAt: post.createdAt,
         };
       }),
@@ -184,11 +220,18 @@ export class CommunityService {
           where: { id: post.authorId },
         });
 
+        // 이미지 URL 배열 추출 (orderIndex 순서대로)
+        const imageUrls = post.images
+          ? post.images
+              .sort((a, b) => a.orderIndex - b.orderIndex)
+              .map((img) => img.imageUrl)
+          : [];
+
         return {
           id: post.id,
           title: post.title,
           content: post.content,
-          imageUrls: post.imageUrls || [],
+          imageUrls,
           author: {
             id: post.authorId,
             nickname: author?.nickname || '익명',
@@ -221,6 +264,9 @@ export class CommunityService {
       .andWhere('post.deletedAt IS NULL')
       .leftJoinAndSelect('post.author', 'author')
       .leftJoinAndSelect('post.building', 'building')
+      .leftJoinAndSelect('post.images', 'images')
+      .leftJoinAndSelect('post.meta', 'meta')
+      .orderBy('images.orderIndex', 'ASC')
       .getOne();
 
     if (!post) {
@@ -234,6 +280,7 @@ export class CommunityService {
       buildingId: post.buildingId,
       authorId: post.authorId,
       boardType: post.boardType,
+      imagesCount: post.images?.length || 0,
     })}`);
 
     // 인증 상태 확인: VERIFIED가 아니면 상세 조회 불가
@@ -275,11 +322,56 @@ export class CommunityService {
       throw new NotFoundException('게시글을 찾을 수 없습니다.');
     }
 
+    // 이미지 URL 배열 추출 (orderIndex 순서대로)
+    const imageUrls = post.images && Array.isArray(post.images) && post.images.length > 0
+      ? post.images
+          .sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0))
+          .map((img) => img.imageUrl)
+          .filter((url) => url) // 빈 URL 제거
+      : [];
+    
+    this.logger.log(`[getPostById] Extracted imageUrls: ${JSON.stringify(imageUrls)}`);
+
+    // Meta 정보 추출
+    const meta = post.meta && Array.isArray(post.meta) && post.meta.length > 0
+      ? post.meta[0]
+      : null;
+
+    // 같이사요 게시글인 경우 참여자 수 조회 및 현재 사용자 참여 여부 확인
+    let participantCount = 0;
+    let isParticipating = false;
+    let chatRoomId: number | null = null;
+    
+    if (post.boardType === BoardType.TOGATHER) {
+      // PostParticipant에서 참여자 수 조회
+      const participantCountFromDB = await this.postParticipantRepository.count({
+        where: { postId: post.id },
+      });
+      
+      // 글쓴이는 항상 참여자로 간주 (PostParticipant에 없어도)
+      // 따라서 항상 +1을 해줘야 함
+      participantCount = participantCountFromDB + 1;
+      
+      // 현재 사용자가 참여 중인지 확인
+      const participant = await this.postParticipantRepository.findOne({
+        where: { postId: post.id, userId: userIdNum },
+      });
+      isParticipating = !!participant || post.authorId === userIdNum;
+      
+      // ChatRoom 조회 (채팅방 입장용)
+      const chatRoom = await this.chatRoomRepository.findOne({
+        where: { postId: post.id },
+      });
+      if (chatRoom) {
+        chatRoomId = chatRoom.id;
+      }
+    }
+
     return {
       id: post.id,
       title: post.title,
       content: post.content,
-      imageUrls: post.imageUrls || [],
+      imageUrls,
       author: {
         id: post.authorId,
         nickname: author?.nickname || '익명',
@@ -293,6 +385,16 @@ export class CommunityService {
       isHot: post.isHot,
       createdAt: post.createdAt,
       updatedAt: post.updatedAt,
+      meta: meta ? {
+        price: meta.price,
+        quantity: meta.quantity,
+        deadline: meta.deadline,
+        locationDetail: meta.locationDetail,
+        extraData: meta.extraData,
+      } : null,
+      participantCount: post.boardType === BoardType.TOGATHER ? participantCount : undefined,
+      isParticipating: post.boardType === BoardType.TOGATHER ? isParticipating : undefined,
+      chatRoomId: post.boardType === BoardType.TOGATHER ? chatRoomId : undefined,
     };
   }
 
@@ -326,18 +428,51 @@ export class CommunityService {
   async createPost(userId: string, dto: CreatePostDto) {
     const userIdNum = parseInt(userId, 10);
     
-    await this.verifyMembership(userIdNum, dto.buildingId);
+    // 사용자의 buildingId를 멤버십에서 추출
+    const membership = await this.membershipRepository.findOne({
+      where: {
+        userId: userIdNum,
+        status: MembershipStatus.ACTIVE,
+      },
+      order: {
+        joinedAt: 'DESC', // 가장 최근에 가입한 빌딩 우선
+      },
+    });
+
+    if (!membership) {
+      throw new NotFoundException('활성화된 빌딩 멤버십이 없습니다.');
+    }
+
+    const buildingId = membership.buildingId;
+    await this.verifyMembership(userIdNum, buildingId);
+
+    // boardType을 BoardType enum으로 변환
+    const boardTypeEnum = dto.boardType.toLowerCase() as BoardType;
+    if (!Object.values(BoardType).includes(boardTypeEnum)) {
+      throw new NotFoundException(`Invalid boardType: ${dto.boardType}`);
+    }
 
     const post = this.postRepository.create({
       authorId: userIdNum,
-      buildingId: dto.buildingId,
-      boardType: dto.boardType,
+      buildingId,
+      boardType: boardTypeEnum,
       title: dto.title,
       content: dto.content,
-      imageUrls: dto.imageUrls || [],
     });
 
     const savedPost = await this.postRepository.save(post);
+
+    // 이미지 저장
+    if (dto.imageUrls && dto.imageUrls.length > 0) {
+      const images = dto.imageUrls.map((url, index) =>
+        this.postImageRepository.create({
+          postId: savedPost.id,
+          imageUrl: url,
+          orderIndex: index,
+        }),
+      );
+      await this.postImageRepository.save(images);
+    }
 
     // 활동 점수 이벤트 발행
     this.eventEmitter.emit('post.created', new PostCreatedEvent(userIdNum));
@@ -368,7 +503,24 @@ export class CommunityService {
 
     if (dto.title) post.title = dto.title;
     if (dto.content) post.content = dto.content;
-    if (dto.imageUrls) post.imageUrls = dto.imageUrls;
+    
+    // 이미지 업데이트
+    if (dto.imageUrls) {
+      // 기존 이미지 삭제
+      await this.postImageRepository.delete({ postId: postIdNum });
+      
+      // 새 이미지 저장
+      if (dto.imageUrls.length > 0) {
+        const images = dto.imageUrls.map((url, index) =>
+          this.postImageRepository.create({
+            postId: postIdNum,
+            imageUrl: url,
+            orderIndex: index,
+          }),
+        );
+        await this.postImageRepository.save(images);
+      }
+    }
 
     const updatedPost = await this.postRepository.save(post);
 
@@ -635,7 +787,7 @@ export class CommunityService {
       order: { createdAt: 'DESC' },
       skip: (page - 1) * limit,
       take: limit,
-      relations: ['author'],
+      relations: ['author', 'images'],
       withDeleted: false,
     });
 
@@ -645,11 +797,18 @@ export class CommunityService {
           where: { id: post.authorId },
         });
 
+        // 이미지 URL 배열 추출 (orderIndex 순서대로)
+        const imageUrls = post.images
+          ? post.images
+              .sort((a, b) => a.orderIndex - b.orderIndex)
+              .map((img) => img.imageUrl)
+          : [];
+
         return {
           id: post.id,
           title: post.title,
           content: post.content,
-          imageUrls: post.imageUrls || [],
+          imageUrls,
           author: {
             id: post.authorId,
             nickname: author?.nickname || '익명',
@@ -733,7 +892,7 @@ export class CommunityService {
       likes.map(async (like) => {
         const post = await this.postRepository.findOne({
           where: { id: like.postId, deletedAt: IsNull() },
-          relations: ['author'],
+          relations: ['author', 'images'],
           withDeleted: false,
         });
 
@@ -745,11 +904,18 @@ export class CommunityService {
           where: { id: post.authorId },
         });
 
+        // 이미지 URL 배열 추출 (orderIndex 순서대로)
+        const imageUrls = post.images
+          ? post.images
+              .sort((a, b) => a.orderIndex - b.orderIndex)
+              .map((img) => img.imageUrl)
+          : [];
+
         return {
           id: post.id,
           title: post.title,
           content: post.content,
-          imageUrls: post.imageUrls || [],
+          imageUrls,
           author: {
             id: post.authorId,
             nickname: author?.nickname || '익명',
@@ -772,6 +938,133 @@ export class CommunityService {
       total,
       page,
       limit,
+    };
+  }
+
+  async joinTogatherPost(postId: string, userId: string) {
+    const postIdNum = parseInt(postId, 10);
+    const userIdNum = parseInt(userId, 10);
+
+    if (isNaN(postIdNum)) {
+      throw new NotFoundException('잘못된 게시글 ID입니다.');
+    }
+
+    // 게시글 조회
+    const post = await this.postRepository.findOne({
+      where: { id: postIdNum, deletedAt: IsNull() },
+    });
+
+    if (!post) {
+      throw new NotFoundException('게시글을 찾을 수 없습니다.');
+    }
+
+    // 같이사요 게시글이 아니면 에러
+    if (post.boardType !== BoardType.TOGATHER) {
+      throw new ForbiddenException('같이사요 게시글만 참여할 수 있습니다.');
+    }
+
+    // 멤버십 확인
+    await this.verifyMembership(userIdNum, post.buildingId);
+
+    // 이미 참여했는지 확인 (PostParticipant 기준)
+    const existingParticipant = await this.postParticipantRepository.findOne({
+      where: { postId: postIdNum, userId: userIdNum },
+    });
+
+    if (existingParticipant) {
+      const participantCount = await this.postParticipantRepository.count({
+        where: { postId: postIdNum },
+      });
+      return {
+        success: true,
+        message: '이미 참여 중입니다.',
+        participantCount: participantCount + 1, // 글쓴이 포함
+      };
+    }
+
+    // 글쓴이는 자동으로 참여자로 간주 (PostParticipant에 추가하지 않음)
+    if (post.authorId === userIdNum) {
+      const participantCount = await this.postParticipantRepository.count({
+        where: { postId: postIdNum },
+      });
+      return {
+        success: true,
+        message: '글쓴이는 이미 참여 중입니다.',
+        participantCount: participantCount + 1,
+      };
+    }
+
+    // 최대 인원 확인
+    const meta = await this.postMetaRepository.findOne({
+      where: { postId: postIdNum },
+    });
+
+    if (meta && meta.quantity) {
+      const currentCount = await this.postParticipantRepository.count({
+        where: { postId: postIdNum },
+      });
+      // 글쓴이 포함하여 계산
+      const totalCount = currentCount + 1;
+
+      if (totalCount >= meta.quantity) {
+        throw new ForbiddenException('모집 인원이 가득 찼습니다.');
+      }
+    }
+
+    // PostParticipant에 참여 추가
+    const participant = this.postParticipantRepository.create({
+      postId: postIdNum,
+      userId: userIdNum,
+      joinedAt: new Date(),
+    });
+    await this.postParticipantRepository.save(participant);
+
+    // ChatRoom 조회 또는 생성
+    let chatRoom = await this.chatRoomRepository.findOne({
+      where: { postId: postIdNum },
+    });
+
+    if (!chatRoom) {
+      // ChatRoom이 없으면 생성
+      chatRoom = this.chatRoomRepository.create({
+        buildingId: post.buildingId,
+        roomType: RoomType.TOPIC,
+        postId: postIdNum,
+        createdBy: post.authorId,
+      });
+      chatRoom = await this.chatRoomRepository.save(chatRoom);
+
+      // 글쓴이를 채팅방에 자동으로 참여시킴
+      const authorMember = this.chatRoomMemberRepository.create({
+        roomId: chatRoom.id,
+        userId: post.authorId,
+        joinedAt: new Date(),
+      });
+      await this.chatRoomMemberRepository.save(authorMember);
+    }
+
+    // 참여한 사용자를 채팅방에도 자동으로 참여시킴
+    const existingChatMember = await this.chatRoomMemberRepository.findOne({
+      where: { roomId: chatRoom.id, userId: userIdNum },
+    });
+
+    if (!existingChatMember) {
+      const chatMember = this.chatRoomMemberRepository.create({
+        roomId: chatRoom.id,
+        userId: userIdNum,
+        joinedAt: new Date(),
+      });
+      await this.chatRoomMemberRepository.save(chatMember);
+    }
+
+    const participantCount = await this.postParticipantRepository.count({
+      where: { postId: postIdNum },
+    });
+
+    return {
+      success: true,
+      message: '참여했습니다.',
+      participantCount: participantCount + 1, // 글쓴이 포함
     };
   }
 

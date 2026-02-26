@@ -29,21 +29,38 @@ class ApiClient {
   ): Promise<T> {
     const url = `${API_URL}${endpoint}`
     
+    // 디버깅: 실제 요청 URL 확인
+    if (typeof window !== 'undefined' && endpoint.includes('images/upload')) {
+      console.log('[API Client] Request URL:', url)
+      console.log('[API Client] API_URL:', API_URL)
+    }
+    
+    // FormData인 경우 Content-Type을 설정하지 않음 (브라우저가 자동 설정)
+    const isFormData = options.body instanceof FormData
+    const headers: HeadersInit = {
+      ...this.getAuthHeader(),
+      ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
+      ...options.headers,
+    }
+    
     const config: RequestInit = {
       ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...this.getAuthHeader(),
-        ...options.headers,
-      },
+      headers,
     }
 
     try {
       const response = await fetch(url, config)
       
       if (!response.ok) {
+        // 디버깅: 에러 응답 상세 정보
+        if (typeof window !== 'undefined' && endpoint.includes('images/upload')) {
+          console.error('[API Client] Response status:', response.status)
+          console.error('[API Client] Response statusText:', response.statusText)
+          console.error('[API Client] Response URL:', response.url)
+        }
+        
         const error: ApiError = await response.json().catch(() => ({
-          message: response.status === 401 ? '인증이 만료되었습니다. 다시 로그인해주세요.' : '서버 오류가 발생했습니다.',
+          message: response.status === 401 ? '인증이 만료되었습니다. 다시 로그인해주세요.' : `서버 오류가 발생했습니다. (${response.status})`,
           statusCode: response.status,
         }))
         
@@ -58,6 +75,11 @@ class ApiClient {
       return await response.json()
     } catch (error) {
       if (error instanceof Error) {
+        // 네트워크 에러인 경우 더 자세한 정보 제공
+        if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+          console.error('[API Client] Network error. Check if backend server is running at:', API_URL)
+          throw new Error(`백엔드 서버에 연결할 수 없습니다. 서버가 ${API_URL}에서 실행 중인지 확인해주세요.`)
+        }
         throw error
       }
       throw new Error('네트워크 오류가 발생했습니다.')
@@ -156,17 +178,7 @@ class ApiClient {
     
     // Map frontend CommunityTag to backend BoardType
     if (boardType && boardType !== 'all' && typeof boardType === 'string') {
-      const boardTypeMap: Record<string, string> = {
-        'togather': 'DELIVERY',  // 같이 사요 -> DELIVERY
-        'share': 'FREE',         // 나눔 -> FREE
-        'lifestyle': 'LIFESTYLE', // ZIP 생활 -> LIFESTYLE
-        'chat': 'FREE',          // 잡담 -> FREE
-        'market': 'FREE',        // ZIP 마켓 -> FREE
-      }
-      const mappedBoardType = boardTypeMap[boardType.toLowerCase()]
-      if (mappedBoardType) {
-        params.append('boardType', mappedBoardType)
-      }
+      params.append('boardType', boardType)
     }
     
     params.append('page', page.toString())
@@ -182,6 +194,15 @@ class ApiClient {
 
   async getPost(id: number) {
     return this.request<any>(`/api/community/posts/${id}`)
+  }
+
+  async joinTogatherPost(postId: number) {
+    return this.request<{ success: boolean; message: string; participantCount: number }>(
+      `/api/community/posts/${postId}/join`,
+      {
+        method: 'POST',
+      }
+    )
   }
 
   async getComments(postId: number, page: number = 1, limit: number = 20, beforeId?: number) {
@@ -217,6 +238,41 @@ class ApiClient {
   async incrementView(postId: number) {
     return this.request<{ viewCount: number }>(`/api/community/posts/${postId}/view`, {
       method: 'POST',
+    })
+  }
+
+  async uploadImages(files: File[]): Promise<{ imageUrls: string[] }> {
+    const formData = new FormData()
+    files.forEach((file) => {
+      formData.append('images', file)
+    })
+
+    return this.request<{ imageUrls: string[] }>('/api/community/images/upload', {
+      method: 'POST',
+      body: formData,
+    })
+  }
+
+  async createPost(data: {
+    boardType: string
+    title: string
+    content: string
+    imageUrls?: string[]
+    meta?: {
+      price?: number
+      quantity?: number
+      deadline?: string
+      locationDetail?: string
+      extraData?: Record<string, any>
+    }
+  }) {
+    return this.request<{
+      id: number
+      title: string
+      createdAt: string
+    }>('/api/community/posts', {
+      method: 'POST',
+      body: JSON.stringify(data),
     })
   }
 

@@ -35,3 +35,37 @@ export const tagColors: Record<CommunityTag, string> = {
   [CommunityTag.CHAT]: '#4ccf89',
   [CommunityTag.MARKET]: '#a88af8',
 }
+
+export const getBoardTypeColor = (boardType: string): string => {
+  const tag = getBoardTypeCommunityTag(boardType)
+  return tagColors[tag] || '#4ccf89'
+}
+
+/**
+ * 마감 시간 포맷팅 함수 (같이사요용)
+ */
+export const formatDeadline = (deadline?: string): string | null => {
+  if (!deadline) return null
+  try {
+    const date = new Date(deadline)
+    const now = new Date()
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const deadlineDate = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+    const diffDays = Math.floor((deadlineDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+    
+    const hours = String(date.getHours()).padStart(2, '0')
+    const minutes = String(date.getMinutes()).padStart(2, '0')
+    const ampm = date.getHours() >= 12 ? '오후' : '오전'
+    const displayHours = date.getHours() > 12 ? String(date.getHours() - 12) : String(date.getHours() || 12)
+    
+    if (diffDays === 0) {
+      return `오늘 ${ampm} ${displayHours}:${minutes}`
+    } else if (diffDays === 1) {
+      return `내일 ${ampm} ${displayHours}:${minutes}`
+    } else {
+      return `${date.getMonth() + 1}/${date.getDate()} ${ampm} ${displayHours}:${minutes}`
+    }
+  } catch {
+    return null
+  }
+}

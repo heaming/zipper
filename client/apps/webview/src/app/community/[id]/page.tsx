@@ -7,14 +7,17 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Eye, Home as HomeIcon, MessageCircle, User, ArrowUp, Lock, MoreVertical, Pencil, Trash2, Flag, MapPin, X, ChevronLeft, ChevronRight, Clock, Pizza, ShoppingBasket, Users, Zap, Bell } from 'lucide-react'
+import { ArrowLeft, Eye, Home as HomeIcon, MessageCircle, User, ArrowUp, Lock, MoreVertical, Pencil, Trash2, Flag, MapPin, X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Card, CardContent, Button, Divider, Badge, BottomSheet, BottomSheetContent } from '@ui/index'
 import { CommunityTag, TAG_ICONS } from '@zipper/models/src/community'
 import { apiClient } from '@/lib/api-client'
 import { useAuthStore } from '@/stores/auth-store'
 import { cn } from '@/lib/utils'
-import { PostTagBadge } from '@/features/community/components/post-tag-badge'
 import { motion } from 'framer-motion'
+import { getTimeAgo } from '@/lib/utils'
+import { getBoardTypeLabel, getBoardTypeColor, getBoardTypeCommunityTag } from '@/features/community/utils/board-type.utils'
+import { TogetherPostDetail } from './_components/TogetherPostDetail'
+import { TogetherPostTag } from './_components/TogetherPostTag'
 
 interface Post {
   id: number
@@ -72,7 +75,6 @@ export default function PostDetailPage() {
   const [replyTo, setReplyTo] = useState<string | null>(null)
   const [replyToCommentId, setReplyToCommentId] = useState<number | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const [isJoining, setIsJoining] = useState(false)
   
   // 햄버거 메뉴 상태 관리
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
@@ -389,86 +391,9 @@ export default function PostDetailPage() {
     }
   }, [postId, isAuthenticated, router, fetchComments])
 
-  const getTimeAgo = (dateString: string) => {
-    const now = new Date()
-    const past = new Date(dateString)
-    const diffMs = now.getTime() - past.getTime()
-    const diffMins = Math.floor(diffMs / 60000)
-    const diffHours = Math.floor(diffMs / 3600000)
-    const diffDays = Math.floor(diffMs / 86400000)
-
-    if (diffMins < 1) return '방금 전'
-    if (diffMins < 60) return `${diffMins}분 전`
-    if (diffHours < 24) return `${diffHours}시간 전`
-    if (diffDays === 1) return '어제'
-    if (diffDays < 7) return `${diffDays}일 전`
-    return past.toLocaleDateString()
-  }
-
-  // 날짜 포맷팅 함수 (같이사요용)
-  const formatDeadline = (deadline?: string) => {
-    if (!deadline) return null
-    try {
-      const date = new Date(deadline)
-      const now = new Date()
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-      const deadlineDate = new Date(date.getFullYear(), date.getMonth(), date.getDate())
-      const diffDays = Math.floor((deadlineDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
-      
-      const hours = String(date.getHours()).padStart(2, '0')
-      const minutes = String(date.getMinutes()).padStart(2, '0')
-      const ampm = date.getHours() >= 12 ? '오후' : '오전'
-      const displayHours = date.getHours() > 12 ? String(date.getHours() - 12) : String(date.getHours() || 12)
-      
-      if (diffDays === 0) {
-        return `오늘 ${ampm} ${displayHours}:${minutes}`
-      } else if (diffDays === 1) {
-        return `내일 ${ampm} ${displayHours}:${minutes}`
-      } else {
-        return `${date.getMonth() + 1}/${date.getDate()} ${ampm} ${displayHours}:${minutes}`
-      }
-    } catch {
-      return null
-    }
-  }
-
-  const getBoardTypeLabel = (boardType: string) => {
-    const labels: Record<string, string> = {
-      togather: '같이 사요',
-      share: '나눔',
-      lifestyle: 'ZIP 생활',
-      chat: '잡담',
-      market: 'ZIP 마켓'
-    }
-    return labels[boardType] || boardType
-  }
-
-  const getBoardTypeColor = (boardType: string) => {
-    const colors: Record<string, string> = {
-      togather: '#fd6174',
-      share: '#7ba8f0',
-      lifestyle: '#ff8e60',
-      chat: '#4ccf89',
-      market: '#a88af8'
-    }
-    return colors[boardType] || '#4ccf89'
-  }
-
-  const getTagClass = (boardType: string) => {
-    return `tag-${boardType.toLowerCase()}`
-  }
-
-  const getBoardTypeCommunityTag = (boardType: string): CommunityTag => {
-    const mapping: Record<string, CommunityTag> = {
-      'togather': CommunityTag.TOGATHER,
-      'share': CommunityTag.SHARE,
-      'lifestyle': CommunityTag.LIFESTYLE,
-      'chat': CommunityTag.CHAT,
-      'market': CommunityTag.MARKET,
-      'all': CommunityTag.ALL
-    }
-    return mapping[boardType.toLowerCase()] || CommunityTag.ALL
-  }
+  const handleParticipantUpdate = useCallback((updates: { participantCount: number; isParticipating: boolean }) => {
+    setPost(prev => prev ? { ...prev, ...updates } : null)
+  }, [])
 
   const handlePreviousImage = () => {
     if (!post?.imageUrls || selectedImageIndex === null) return
@@ -513,30 +438,6 @@ export default function PostDetailPage() {
   const Icon = TAG_ICONS[tag]
   
   const isTogather = post.boardType === 'togather'
-  const category = post.tag || post.meta?.extraData?.category || null
-  const isDelivery = category === '배달' || category === 'DELIVERY'
-  const isGroupBuy = category === '공구' || category === 'GROUP_BUY'
-  
-  // 디버깅용 로그
-  if (isTogather) {
-    console.log('[PostDetail] Togather post:', {
-      id: post.id,
-      boardType: post.boardType,
-      tag: post.tag,
-      meta: post.meta,
-      extraData: post.meta?.extraData,
-      category,
-      isDelivery,
-      isGroupBuy,
-      participantCount: post.participantCount,
-    })
-  }
-  
-  // 현재 참여자 수 (글쓴이는 무조건 참여자이므로 최소 1명)
-  const currentParticipants = post.participantCount || 1
-  const maxParticipants = post.meta?.quantity || 0
-  const isFull = maxParticipants > 0 && currentParticipants >= maxParticipants
-  const remainingSlots = Math.max(0, maxParticipants - currentParticipants)
 
   return (
     <motion.div 
@@ -571,38 +472,8 @@ export default function PostDetailPage() {
       <main className="flex-1">
         <Card className="rounded-none border-x-0">
           <CardContent className="p-4">
-            {/* Tag - 같이사요 게시글일 때 특별한 레이아웃 */}
-            {isTogather ? (
-              <div className="flex items-center gap-2 mb-3">
-                <PostTagBadge boardType={post.boardType} />
-                {(isDelivery || isGroupBuy) && (
-                  <div className={cn(
-                    "inline-flex items-center gap-1 px-1.5 mb-2 py-0.5 rounded text-[11px] font-bold",
-                    isDelivery && "text-[#7ba8f0] bg-blue-50",
-                    isGroupBuy && "text-[#ff8e60] bg-orange-50"
-                  )}>
-                    {isDelivery ? (
-                      <>
-                        <Pizza className="w-2.5 h-2.5" strokeWidth={1.5} />
-                        <span>배달</span>
-                      </>
-                    ) : (
-                      <>
-                        <ShoppingBasket className="w-2.5 h-2.5" strokeWidth={1.5} />
-                        <span>공구</span>
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[11px] bg-gray-50 mb-3">
-                {Icon && <Icon className={cn("w-2.5 h-2.5", getTagClass(post.boardType))} strokeWidth={1.5} />}
-                <span className="text-gray-400">
-                  {getBoardTypeLabel(post.boardType)}
-                </span>
-              </div>
-            )}
+            {/* Tag - 같이사요 게시글의 경우 배달|공구 태그만 표시 */}
+            {isTogather && <TogetherPostTag post={post} />}
 
             {/* Title */}
             <h2 className="text-xl font-bold text-text-primary mb-4">
@@ -624,140 +495,13 @@ export default function PostDetailPage() {
 
             <Divider />
 
-            {/* 같이사요 게시글: 만남장소 | 마감시간 */}
+            {/* 같이사요 게시글: 만남장소 | 마감시간 및 모집인원 */}
             {isTogather && (
-              <div className="flex gap-2 mt-4">
-                <div className="flex-1 bg-gray-50 rounded-lg px-3 py-2.5">
-                  <div className="text-xs text-gray-500 mb-1">만남 장소</div>
-                  <div className="flex items-center gap-1.5 text-sm text-text-primary">
-                    <MapPin className="w-3.5 h-3.5 text-[#7ba8f0]" strokeWidth={1.5} />
-                    <span>{post.meta?.locationDetail && post.meta.locationDetail.trim() ? post.meta.locationDetail : '미정'}</span>
-                  </div>
-                </div>
-                <div className="flex-1 bg-gray-50 rounded-lg px-3 py-2.5">
-                  <div className="text-xs text-gray-500 mb-1">마감 시간</div>
-                  <div className="flex items-center gap-1.5 text-sm text-text-primary">
-                    <Clock className="w-3.5 h-3.5 text-[#ff8e60]" strokeWidth={1.5} />
-                    <span>{post.meta?.deadline ? formatDeadline(post.meta.deadline) : '미정'}</span>
-                  </div>
-                </div>
-              </div>
-            )}
-
-
-            {/* 같이사요 게시글: 모집인원 및 참여 버튼 */}
-            {isTogather && (
-              <div className="mt-3 mb-6">
-                <div className="bg-gray-50 rounded-lg p-4">
-                  {maxParticipants > 0 && (
-                    <div className="mb-3">
-                      <div className="text-xs text-gray-500 mb-2">모집 인원</div>
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 bg-white rounded-full h-2 overflow-hidden">
-                          <div
-                            className={cn(
-                              "h-full rounded-full transition-all bg-gray-200",
-                            )}
-                          >
-                            <motion.div
-                              initial={{ width: 0 }}
-                              animate={{ width: `${Math.min(100, maxParticipants > 0 ? (currentParticipants / maxParticipants) * 100 : 0)}%` }}
-                              transition={{ duration: 1, ease: "easeOut" }}
-                              className="h-full bg-[#4ccf89] rounded-full"
-                            />
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-1 text-sm">
-                          <span className={cn("font-semibold", isFull ? "text-green-500" : "text-[#4ccf89]")}>
-                            {currentParticipants}
-                          </span>
-                          <span className="text-gray-500">/</span>
-                          <span className="text-gray-500">{maxParticipants}명</span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {post.isParticipating ? (
-                    <Button
-                      fullWidth
-                      onClick={() => {
-                        // TODO: 채팅방으로 이동하는 기능 구현 예정
-                        if (post.chatRoomId) {
-                          // router.push(`/chat/${post.chatRoomId}`)
-                          alert('채팅방 입장 기능은 곧 구현될 예정입니다.')
-                        }
-                      }}
-                      className="mb-2 border border-primary bg-white hover:bg-white text-primary shadow-md shadow-green-100 font-bold"
-                    >
-                      <MessageCircle className="w-4 h-4 mr-1" strokeWidth={2.5} />
-                      채팅방 입장
-                    </Button>
-                  ) : (
-                    <Button
-                      fullWidth
-                      onClick={async () => {
-                        if (isFull) {
-                          alert('알림받기 기능은 곧 구현될 예정입니다.')
-                          return
-                        }
-
-                        if (isJoining) return
-
-                        try {
-                          setIsJoining(true)
-                          const result = await apiClient.joinTogatherPost(Number(postId))
-                          
-                          // 참여자 수 및 참여 상태 업데이트
-                          setPost({
-                            ...post,
-                            participantCount: result.participantCount,
-                            isParticipating: true,
-                          })
-                          
-                          alert(result.message || '참여했습니다.')
-                        } catch (error: any) {
-                          console.error('Failed to join togather post:', error)
-                          alert(error?.message || '참여에 실패했습니다.')
-                        } finally {
-                          setIsJoining(false)
-                        }
-                      }}
-                      disabled={isJoining}
-                      className={cn(
-                        "mb-2",
-                        isFull
-                          ? "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                          : "bg-[#4ccf89] text-white hover:bg-[#45b880]"
-                      )}
-                    >
-                      {isJoining ? (
-                        <>로딩 중...</>
-                      ) : isFull ? (
-                        <>
-                          <Bell className="w-4 h-4 mr-2" strokeWidth={1.5} />
-                          알림받기
-                        </>
-                      ) : (
-                        <>
-                          <Zap className="w-4 h-4 mr-2" strokeWidth={1.5} />
-                          참여하기
-                        </>
-                      )}
-                    </Button>
-                  )}
-
-                  <div className="text-xs text-center text-gray-500">
-                    {isFull ? (
-                      "모집이 완료되었습니다! 참여가 가능해지면 알려드릴까요?"
-                    ) : maxParticipants > 0 ? (
-                      `${remainingSlots}명 더 모이면 성사돼요!`
-                    ) : (
-                      "참여하기 버튼을 눌러주세요!"
-                    )}
-                  </div>
-                </div>
-              </div>
+              <TogetherPostDetail 
+                post={post} 
+                postId={postId}
+                onParticipantUpdate={handleParticipantUpdate}
+              />
             )}
 
             {/* Content */}

@@ -9,10 +9,12 @@
 import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { CommunityTag } from '@zipper/models/src/community'
+import { motion } from 'framer-motion'
 
 import { apiClient } from '@/lib/api-client'
 import { WriteTypeSelect } from './_components/WriteTypeSelect'
 import { TogetherWrite } from './_components/TogetherWrite'
+import { ShareWrite } from './_components/ShareWrite'
 import { SimpleWrite } from './_components/SimpleWrite'
 
 function WritePageContent() {
@@ -55,15 +57,64 @@ function WritePageContent() {
     }
   }
 
+  // 페이지 로드 시 스크롤을 맨 위로 초기화
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [selectedType])
+
   if (!selectedType) {
-    return <WriteTypeSelect onSelect={setSelectedType} onClose={handleBack} />
+    return (
+      <motion.div
+        key="write-type-select"
+        initial={{ y: '100%' }}
+        animate={{ y: 0 }}
+        exit={{ y: '100%' }}
+        className="flex flex-col min-h-screen bg-background"
+      >
+        <WriteTypeSelect onSelect={setSelectedType} onClose={handleBack} />
+      </motion.div>
+    )
   }
 
   if (selectedType === CommunityTag.TOGATHER) {
-    return <TogetherWrite buildingId={buildingId} onBack={handleBack} />
+    return (
+      <motion.div
+        key="write-together"
+        initial={{ y: '100%' }}
+        animate={{ y: 0 }}
+        exit={{ y: '100%' }}
+        className="flex flex-col min-h-screen bg-background"
+      >
+        <TogetherWrite buildingId={buildingId} onBack={handleBack} />
+      </motion.div>
+    )
   }
 
-  return <SimpleWrite tag={selectedType} buildingId={buildingId} onBack={handleBack} />
+  if (selectedType === CommunityTag.SHARE) {
+    return (
+      <motion.div
+        key="write-share"
+        initial={{ y: '100%' }}
+        animate={{ y: 0 }}
+        exit={{ y: '100%' }}
+        className="flex flex-col min-h-screen bg-background"
+      >
+        <ShareWrite buildingId={buildingId} onBack={handleBack} />
+      </motion.div>
+    )
+  }
+
+  return (
+    <motion.div
+      key={`write-simple-${selectedType}`}
+      initial={{ y: '100%' }}
+      animate={{ y: 0 }}
+      exit={{ y: '100%' }}
+      className="flex flex-col min-h-screen bg-background"
+    >
+      <SimpleWrite tag={selectedType} buildingId={buildingId} onBack={handleBack} />
+    </motion.div>
+  )
 }
 
 export default function WritePage() {

@@ -16,7 +16,7 @@ import {
 import { CommunityTag, TAG_LABELS } from '@zipper/models/src/community'
 import { cn } from '@/lib/utils'
 import { apiClient } from '@/lib/api-client'
-import { Plus, X, Calendar as CalendarIcon, Moon, Sun } from 'lucide-react'
+import { Plus, X, Calendar as CalendarIcon, Moon, Sun, MapPin, ShoppingBag, Link as LinkIcon } from 'lucide-react'
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import { toast } from 'sonner'
@@ -35,10 +35,13 @@ export function TogetherWrite({ buildingId, onBack }: Props) {
 
   const [category, setCategory] = useState<'공구' | '배달'>('배달')
   const [title, setTitle] = useState('')
+  const [price, setPrice] = useState('')
+  const [productLink, setProductLink] = useState('')
   const [targetQuantity, setTargetQuantity] = useState('')
   const [deadlineDate, setDeadlineDate] = useState<Date | undefined>(undefined)
   const [deadlineTime, setDeadlineTime] = useState('')
   const [isPM, setIsPM] = useState(false)
+  const [locationDetail, setLocationDetail] = useState('')
   const [description, setDescription] = useState('')
   const [images, setImages] = useState<string[]>([])
   const [imageFiles, setImageFiles] = useState<File[]>([])
@@ -217,9 +220,15 @@ export function TogetherWrite({ buildingId, onBack }: Props) {
         imageUrls,
         meta: {
           quantity: targetQuantity ? parseInt(targetQuantity, 10) : undefined,
+          price: category === '공구' && price ? parseFloat(price.replace(/,/g, '')) : undefined,
           deadline: deadlineDate && deadlineTime 
             ? new Date(`${format(deadlineDate, 'yyyy-MM-dd')}T${deadlineTime}:00`).toISOString()
             : undefined,
+          locationDetail: locationDetail.trim() || undefined,
+          extraData: {
+            category: category,
+            productLink: category === '공구' && productLink.trim() ? productLink.trim() : undefined,
+          },
         },
       })
 
@@ -300,6 +309,46 @@ export function TogetherWrite({ buildingId, onBack }: Props) {
               />
               {titleError && <p className="text-xs text-red-500 mt-1">{titleError}</p>}
             </div>
+
+            {category === '공구' && (
+              <>
+                <div>
+                  <label className="text-sm font-medium text-text-primary mb-2 block">
+                    예상 가격 (1인당)
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="예) 1,200원"
+                      value={price}
+                      onChange={(e) => {
+                        // 숫자와 쉼표만 허용
+                        const value = e.target.value.replace(/[^0-9,]/g, '')
+                        setPrice(value)
+                      }}
+                      className="w-full px-3 py-2 pr-10 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                    <ShoppingBag className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-text-tertiary pointer-events-none" />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-text-primary mb-2 block">
+                    상품 링크 <span className="text-text-tertiary text-xs">(선택)</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="구매할 상품의 링크를 넣어주세요"
+                      value={productLink}
+                      onChange={(e) => setProductLink(e.target.value)}
+                      className="w-full px-3 py-2 pr-10 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                    <LinkIcon className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-text-tertiary pointer-events-none" />
+                  </div>
+                </div>
+              </>
+            )}
 
             <div>
               <label className="text-sm font-medium text-text-primary mb-2 block">
@@ -570,6 +619,25 @@ export function TogetherWrite({ buildingId, onBack }: Props) {
                   </DropdownMenu>
                 </div>
               </div>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-text-primary mb-2 block">
+                만남 장소
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="예) 101동 1층 로비"
+                  value={locationDetail}
+                  onChange={(e) => setLocationDetail(e.target.value)}
+                  className="w-full px-3 py-2 pr-10 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+                <MapPin className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-text-tertiary pointer-events-none" />
+              </div>
+              <p className="text-xs text-text-tertiary mt-1">
+                건물 내 공용 공간을 선택하면 이웃들이 찾기 편해요!
+              </p>
             </div>
 
             <div>

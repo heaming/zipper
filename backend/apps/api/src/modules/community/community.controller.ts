@@ -227,4 +227,12 @@ export class CommunityController {
       parseInt(limit),
     );
   }
+
+  @Post('posts/:postId/join')
+  async joinTogatherPost(
+    @Param('postId') postId: string,
+    @CurrentUser() user: any,
+  ) {
+    return this.communityService.joinTogatherPost(postId, user.id);
+  }
 }

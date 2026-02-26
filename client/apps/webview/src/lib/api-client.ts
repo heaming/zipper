@@ -196,6 +196,15 @@ class ApiClient {
     return this.request<any>(`/api/community/posts/${id}`)
   }
 
+  async joinTogatherPost(postId: number) {
+    return this.request<{ success: boolean; message: string; participantCount: number }>(
+      `/api/community/posts/${postId}/join`,
+      {
+        method: 'POST',
+      }
+    )
+  }
+
   async getComments(postId: number, page: number = 1, limit: number = 20, beforeId?: number) {
     const params = new URLSearchParams()
     params.append('page', page.toString())

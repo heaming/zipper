@@ -6,7 +6,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Pencil, MessageSquareReply, Home as HomeIcon } from 'lucide-react'
+import { ChevronLeft, Pencil, MessageSquareReply, Home as HomeIcon } from 'lucide-react'
 import { Card, CardContent } from '@ui/index'
 import { cn } from '@/lib/utils'
 import { apiClient } from '@/lib/api-client'
@@ -231,14 +231,13 @@ export default function ActivityPage() {
       <header className="bg-surface border-b border-border sticky top-0 z-10">
         <div className="px-4 py-3">
           <div className="flex items-center gap-3">
-            <div className="flex flex-col items-center">
-              <button
-                onClick={() => router.back()}
-                className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <ArrowLeft className="w-5 h-5 text-text-primary" strokeWidth={1.5} />
-              </button>
-            </div>
+            <button
+              onClick={() => router.back()}
+              className="flex items-center gap-1 hover:bg-gray-100 rounded-lg transition-colors px-1 py-1"
+            >
+              <ChevronLeft className="w-5 h-5 text-text-primary" strokeWidth={1.5} />
+              <span className="text-sm text-text-primary">뒤로</span>
+            </button>
             <h1 className="text-xl font-bold text-text-primary">내 활동 내역</h1>
           </div>
         </div>

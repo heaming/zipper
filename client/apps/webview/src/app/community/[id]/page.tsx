@@ -7,12 +7,14 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Eye, Home as HomeIcon, MessageCircle, User, ArrowUp, Lock, MoreVertical, Pencil, Trash2, Flag, MapPin, X, ChevronLeft, ChevronRight } from 'lucide-react'
+import { ArrowLeft, Eye, Home as HomeIcon, MessageCircle, User, ArrowUp, Lock, MoreVertical, Pencil, Trash2, Flag, MapPin, X, ChevronLeft, ChevronRight, Clock, Pizza, ShoppingBasket, Users, Zap, Bell } from 'lucide-react'
 import { Card, CardContent, Button, Divider, Badge, BottomSheet, BottomSheetContent } from '@ui/index'
 import { CommunityTag, TAG_ICONS } from '@zipper/models/src/community'
 import { apiClient } from '@/lib/api-client'
 import { useAuthStore } from '@/stores/auth-store'
 import { cn } from '@/lib/utils'
+import { PostTagBadge } from '@/features/community/components/post-tag-badge'
+import { motion } from 'framer-motion'
 
 interface Post {
   id: number
@@ -30,6 +32,15 @@ interface Post {
     id: number
     nickname: string
   }
+  meta?: {
+    quantity?: number
+    deadline?: string
+    locationDetail?: string
+    extraData?: Record<string, any>
+  }
+  participantCount?: number
+  isParticipating?: boolean
+  chatRoomId?: number
 }
 
 interface Comment {
@@ -61,6 +72,7 @@ export default function PostDetailPage() {
   const [replyTo, setReplyTo] = useState<string | null>(null)
   const [replyToCommentId, setReplyToCommentId] = useState<number | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const [isJoining, setIsJoining] = useState(false)
   
   // 햄버거 메뉴 상태 관리
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
@@ -91,6 +103,8 @@ export default function PostDetailPage() {
       const data = await apiClient.getPost(Number(postId))
       console.log('[PostDetail] Fetched post data:', data)
       console.log('[PostDetail] Image URLs:', data.imageUrls)
+      console.log('[PostDetail] Meta data:', data.meta)
+      console.log('[PostDetail] ExtraData:', data.meta?.extraData)
       setPost(data)
       
       // 좋아요 상태 초기화
@@ -111,10 +125,8 @@ export default function PostDetailPage() {
       // 인증 관련 에러인 경우 Bottom Sheet 표시
       if (error?.message?.includes('인증') || error?.message?.includes('건물 인증')) {
         setShowVerificationSheet(true)
-      } else {
-        // 다른 에러는 그대로 표시
-        alert(error?.message || '게시글을 불러오는데 실패했습니다.')
       }
+      // 다른 에러는 조용히 처리 (alert 제거)
     } finally {
       setLoading(false)
     }
@@ -393,6 +405,33 @@ export default function PostDetailPage() {
     return past.toLocaleDateString()
   }
 
+  // 날짜 포맷팅 함수 (같이사요용)
+  const formatDeadline = (deadline?: string) => {
+    if (!deadline) return null
+    try {
+      const date = new Date(deadline)
+      const now = new Date()
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+      const deadlineDate = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+      const diffDays = Math.floor((deadlineDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+      
+      const hours = String(date.getHours()).padStart(2, '0')
+      const minutes = String(date.getMinutes()).padStart(2, '0')
+      const ampm = date.getHours() >= 12 ? '오후' : '오전'
+      const displayHours = date.getHours() > 12 ? String(date.getHours() - 12) : String(date.getHours() || 12)
+      
+      if (diffDays === 0) {
+        return `오늘 ${ampm} ${displayHours}:${minutes}`
+      } else if (diffDays === 1) {
+        return `내일 ${ampm} ${displayHours}:${minutes}`
+      } else {
+        return `${date.getMonth() + 1}/${date.getDate()} ${ampm} ${displayHours}:${minutes}`
+      }
+    } catch {
+      return null
+    }
+  }
+
   const getBoardTypeLabel = (boardType: string) => {
     const labels: Record<string, string> = {
       togather: '같이 사요',
@@ -402,6 +441,17 @@ export default function PostDetailPage() {
       market: 'ZIP 마켓'
     }
     return labels[boardType] || boardType
+  }
+
+  const getBoardTypeColor = (boardType: string) => {
+    const colors: Record<string, string> = {
+      togather: '#fd6174',
+      share: '#7ba8f0',
+      lifestyle: '#ff8e60',
+      chat: '#4ccf89',
+      market: '#a88af8'
+    }
+    return colors[boardType] || '#4ccf89'
   }
 
   const getTagClass = (boardType: string) => {
@@ -455,35 +505,65 @@ export default function PostDetailPage() {
     return null
   }
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
-        <p className="text-text-secondary">로딩 중...</p>
-      </div>
-    )
-  }
-
   if (!post || !post.boardType) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-background gap-4">
-        <p className="text-text-secondary">게시글을 찾을 수 없습니다</p>
-        <Button onClick={() => router.back()}>돌아가기</Button>
-      </div>
-    )
+    return null
   }
 
   const tag = getBoardTypeCommunityTag(post.boardType)
   const Icon = TAG_ICONS[tag]
+  
+  const isTogather = post.boardType === 'togather'
+  const category = post.tag || post.meta?.extraData?.category || null
+  const isDelivery = category === '배달' || category === 'DELIVERY'
+  const isGroupBuy = category === '공구' || category === 'GROUP_BUY'
+  
+  // 디버깅용 로그
+  if (isTogather) {
+    console.log('[PostDetail] Togather post:', {
+      id: post.id,
+      boardType: post.boardType,
+      tag: post.tag,
+      meta: post.meta,
+      extraData: post.meta?.extraData,
+      category,
+      isDelivery,
+      isGroupBuy,
+      participantCount: post.participantCount,
+    })
+  }
+  
+  // 현재 참여자 수 (글쓴이는 무조건 참여자이므로 최소 1명)
+  const currentParticipants = post.participantCount || 1
+  const maxParticipants = post.meta?.quantity || 0
+  const isFull = maxParticipants > 0 && currentParticipants >= maxParticipants
+  const remainingSlots = Math.max(0, maxParticipants - currentParticipants)
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
+    <motion.div 
+      key={`post-${postId}`}
+      initial={{ x: '100%' }}
+      animate={{ x: 0 }}
+      exit={{ x: '100%' }}
+      className="flex flex-col min-h-screen bg-white"
+    >
       {/* Header */}
       <header className="bg-white border-b border-border sticky top-0 z-10">
-        <div className="flex items-center gap-3 px-4 py-3">
-          <button onClick={() => router.back()} className="touch-area">
-            <ArrowLeft className="w-5 h-5 text-text-primary" strokeWidth={1.5} />
+        <div className="flex items-center justify-between px-4 py-3">
+          <button onClick={() => router.back()} className="touch-area flex items-center gap-1">
+            <ChevronLeft className="w-5 h-5 text-text-primary" strokeWidth={1.5} />
+            <span className="text-sm text-text-primary">뒤로</span>
           </button>
-          <h1 className="text-xl font-bold text-text-primary">ZIPPER</h1>
+          <h1 className="text-xl font-bold text-text-primary absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
+            {Icon && (
+              <Icon 
+                className="w-5 h-5" 
+                strokeWidth={1.5}
+                style={{ color: getBoardTypeColor(post.boardType) }}
+              />
+            )}
+            <span>{getBoardTypeLabel(post.boardType)}</span>
+          </h1>
+          <div className="w-[60px]"></div>
         </div>
       </header>
 
@@ -491,13 +571,38 @@ export default function PostDetailPage() {
       <main className="flex-1">
         <Card className="rounded-none border-x-0">
           <CardContent className="p-4">
-            {/* Tag */}
-            <div className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[11px] bg-gray-50 mb-3">
-              {Icon && <Icon className={cn("w-2.5 h-2.5", getTagClass(post.boardType))} strokeWidth={1.5} />}
-              <span className="text-gray-400">
-                {getBoardTypeLabel(post.boardType)}
-              </span>
-            </div>
+            {/* Tag - 같이사요 게시글일 때 특별한 레이아웃 */}
+            {isTogather ? (
+              <div className="flex items-center gap-2 mb-3">
+                <PostTagBadge boardType={post.boardType} />
+                {(isDelivery || isGroupBuy) && (
+                  <div className={cn(
+                    "inline-flex items-center gap-1 px-1.5 mb-2 py-0.5 rounded text-[11px] font-bold",
+                    isDelivery && "text-[#7ba8f0] bg-blue-50",
+                    isGroupBuy && "text-[#ff8e60] bg-orange-50"
+                  )}>
+                    {isDelivery ? (
+                      <>
+                        <Pizza className="w-2.5 h-2.5" strokeWidth={1.5} />
+                        <span>배달</span>
+                      </>
+                    ) : (
+                      <>
+                        <ShoppingBasket className="w-2.5 h-2.5" strokeWidth={1.5} />
+                        <span>공구</span>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[11px] bg-gray-50 mb-3">
+                {Icon && <Icon className={cn("w-2.5 h-2.5", getTagClass(post.boardType))} strokeWidth={1.5} />}
+                <span className="text-gray-400">
+                  {getBoardTypeLabel(post.boardType)}
+                </span>
+              </div>
+            )}
 
             {/* Title */}
             <h2 className="text-xl font-bold text-text-primary mb-4">
@@ -519,8 +624,144 @@ export default function PostDetailPage() {
 
             <Divider />
 
+            {/* 같이사요 게시글: 만남장소 | 마감시간 */}
+            {isTogather && (
+              <div className="flex gap-2 mt-4">
+                <div className="flex-1 bg-gray-50 rounded-lg px-3 py-2.5">
+                  <div className="text-xs text-gray-500 mb-1">만남 장소</div>
+                  <div className="flex items-center gap-1.5 text-sm text-text-primary">
+                    <MapPin className="w-3.5 h-3.5 text-[#7ba8f0]" strokeWidth={1.5} />
+                    <span>{post.meta?.locationDetail && post.meta.locationDetail.trim() ? post.meta.locationDetail : '미정'}</span>
+                  </div>
+                </div>
+                <div className="flex-1 bg-gray-50 rounded-lg px-3 py-2.5">
+                  <div className="text-xs text-gray-500 mb-1">마감 시간</div>
+                  <div className="flex items-center gap-1.5 text-sm text-text-primary">
+                    <Clock className="w-3.5 h-3.5 text-[#ff8e60]" strokeWidth={1.5} />
+                    <span>{post.meta?.deadline ? formatDeadline(post.meta.deadline) : '미정'}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+
+            {/* 같이사요 게시글: 모집인원 및 참여 버튼 */}
+            {isTogather && (
+              <div className="mt-3 mb-6">
+                <div className="bg-gray-50 rounded-lg p-4">
+                  {maxParticipants > 0 && (
+                    <div className="mb-3">
+                      <div className="text-xs text-gray-500 mb-2">모집 인원</div>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 bg-white rounded-full h-2 overflow-hidden">
+                          <div
+                            className={cn(
+                              "h-full rounded-full transition-all bg-gray-200",
+                            )}
+                          >
+                            <motion.div
+                              initial={{ width: 0 }}
+                              animate={{ width: `${Math.min(100, maxParticipants > 0 ? (currentParticipants / maxParticipants) * 100 : 0)}%` }}
+                              transition={{ duration: 1, ease: "easeOut" }}
+                              className="h-full bg-[#4ccf89] rounded-full"
+                            />
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1 text-sm">
+                          <span className={cn("font-semibold", isFull ? "text-green-500" : "text-[#4ccf89]")}>
+                            {currentParticipants}
+                          </span>
+                          <span className="text-gray-500">/</span>
+                          <span className="text-gray-500">{maxParticipants}명</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {post.isParticipating ? (
+                    <Button
+                      fullWidth
+                      onClick={() => {
+                        // TODO: 채팅방으로 이동하는 기능 구현 예정
+                        if (post.chatRoomId) {
+                          // router.push(`/chat/${post.chatRoomId}`)
+                          alert('채팅방 입장 기능은 곧 구현될 예정입니다.')
+                        }
+                      }}
+                      className="mb-2 border border-primary bg-white hover:bg-white text-primary shadow-md shadow-green-100 font-bold"
+                    >
+                      <MessageCircle className="w-4 h-4 mr-1" strokeWidth={2.5} />
+                      채팅방 입장
+                    </Button>
+                  ) : (
+                    <Button
+                      fullWidth
+                      onClick={async () => {
+                        if (isFull) {
+                          alert('알림받기 기능은 곧 구현될 예정입니다.')
+                          return
+                        }
+
+                        if (isJoining) return
+
+                        try {
+                          setIsJoining(true)
+                          const result = await apiClient.joinTogatherPost(Number(postId))
+                          
+                          // 참여자 수 및 참여 상태 업데이트
+                          setPost({
+                            ...post,
+                            participantCount: result.participantCount,
+                            isParticipating: true,
+                          })
+                          
+                          alert(result.message || '참여했습니다.')
+                        } catch (error: any) {
+                          console.error('Failed to join togather post:', error)
+                          alert(error?.message || '참여에 실패했습니다.')
+                        } finally {
+                          setIsJoining(false)
+                        }
+                      }}
+                      disabled={isJoining}
+                      className={cn(
+                        "mb-2",
+                        isFull
+                          ? "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                          : "bg-[#4ccf89] text-white hover:bg-[#45b880]"
+                      )}
+                    >
+                      {isJoining ? (
+                        <>로딩 중...</>
+                      ) : isFull ? (
+                        <>
+                          <Bell className="w-4 h-4 mr-2" strokeWidth={1.5} />
+                          알림받기
+                        </>
+                      ) : (
+                        <>
+                          <Zap className="w-4 h-4 mr-2" strokeWidth={1.5} />
+                          참여하기
+                        </>
+                      )}
+                    </Button>
+                  )}
+
+                  <div className="text-xs text-center text-gray-500">
+                    {isFull ? (
+                      "모집이 완료되었습니다! 참여가 가능해지면 알려드릴까요?"
+                    ) : maxParticipants > 0 ? (
+                      `${remainingSlots}명 더 모이면 성사돼요!`
+                    ) : (
+                      "참여하기 버튼을 눌러주세요!"
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Content */}
-            <div className="my-4 text-text-primary whitespace-pre-wrap">
+            <div className="my-4 text-text-primary whitespace-pre-wrap p-1">
               {post.content}
             </div>
 
@@ -565,8 +806,6 @@ export default function PostDetailPage() {
               </div>
             )}
 
-            <Divider />
-
             {/* Engagement Section */}
             <div className="flex items-center justify-between mt-4">
               <div className="flex items-center gap-4">
@@ -595,7 +834,7 @@ export default function PostDetailPage() {
 
         {/* Comments Section */}
         <div className="mt-2 pb-40">
-          <div className="bg-surface px-4 py-3 border-b border-border">
+          <div className="bg-surface px-4 py-3 border-border">
             <h3 className="text-sm font-semibold text-text-primary flex items-center gap-2">
               <MessageCircle className="w-4 h-4" strokeWidth={1.5} />
               댓글 {totalComments || comments.reduce((total, comment) => total + 1 + (comment.replies?.length || 0), 0)}
@@ -1026,6 +1265,6 @@ export default function PostDetailPage() {
           </div>
         </BottomSheetContent>
       </BottomSheet>
-    </div>
+    </motion.div>
   )
 }

@@ -15,6 +15,7 @@ import { apiClient } from '@/lib/api-client'
 import { useAuthStore } from '@/stores/auth-store'
 import { CommunityPostCard } from '@/features/community/components/community-post-card'
 import { boardTypeByTag } from '@/app/write/_constants'
+import { motion, AnimatePresence } from 'framer-motion'
 
 const tags = [
   CommunityTag.ALL,
@@ -38,14 +39,20 @@ interface Post {
     id: number
     nickname: string
   }
+  meta?: {
+    quantity?: number
+    deadline?: string
+    locationDetail?: string
+    extraData?: Record<string, any>
+  }
 }
 
 const writeOptions = [
-  { tag: CommunityTag.LIFESTYLE, description: '우리 동네 궁금해요' },
-  { tag: CommunityTag.TOGATHER, description: '공구·음식·배달 함께해요' },
-  { tag: CommunityTag.CHAT, description: '자유롭게 이야기해요' },
-  { tag: CommunityTag.SHARE, description: '무료로 나눠드려요' },
-  { tag: CommunityTag.MARKET, description: '상업 광고 (권한 필요)' },
+  { tag: CommunityTag.LIFESTYLE, description: '우리 동네 궁금해요', disabled: false },
+  { tag: CommunityTag.TOGATHER, description: '공구·음식·배달 함께해요', disabled: false },
+  { tag: CommunityTag.CHAT, description: '자유롭게 이야기해요', disabled: false },
+  { tag: CommunityTag.SHARE, description: '무료로 나눠드려요', disabled: false },
+  { tag: CommunityTag.MARKET, description: '상업 광고 (권한 필요)', disabled: true },
 ]
 
 const tagColors: Record<CommunityTag, string> = {
@@ -204,65 +211,111 @@ export default function CommunityPage() {
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-3">
+          <motion.div
+            key={activeTag}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.2 }}
+            className="space-y-3"
+          >
             {posts.map((post) => (
               <CommunityPostCard key={post.id} post={post} />
             ))}
-          </div>
+          </motion.div>
         )}
       </main>
 
+      {/* Overlay with blur */}
+      <AnimatePresence>
+        {showWriteMenu && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowWriteMenu(false)}
+            className="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-20"
+          />
+        )}
+      </AnimatePresence>
+
       {/* Floating Write Button & Menu */}
       <div className="fixed bottom-20 right-4 z-30">
-        {/* Write Menu */}
-        {showWriteMenu && (
-          <div
-            ref={menuRef}
-            className="absolute bottom-16 right-0 w-64 bg-white rounded-lg shadow-xl border border-gray-200 overflow-hidden mb-2"
-          >
-            {writeOptions.map((option, index) => {
-              const Icon = TAG_ICONS[option.tag]
-              const color = tagColors[option.tag]
-              return (
-                <Link
-                  key={option.tag}
-                  href={`/write?tag=${option.tag}`}
-                  onClick={() => setShowWriteMenu(false)}
-                >
-                  <div
-                    className={cn(
-                      'flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors',
-                      index !== writeOptions.length - 1 && 'border-b border-gray-100'
-                    )}
-                  >
-                    {Icon && (
-                      <Icon
-                        className="w-5 h-5"
-                        strokeWidth={1.5}
-                        style={{ color }}
-                      />
-                    )}
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-text-primary text-sm">
-                        {TAG_LABELS[option.tag]}
-                      </h3>
-                      <p className="text-xs text-text-secondary mt-0.5">
-                        {option.description}
-                      </p>
+        <AnimatePresence>
+          {showWriteMenu && (
+            <>
+              {/* Write Menu */}
+              <motion.div
+                ref={menuRef}
+                initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 20, scale: 0.95 }}
+                onClick={(e) => e.stopPropagation()}
+                className="absolute bottom-16 right-0 w-64 bg-white rounded-lg shadow-xl border border-gray-200 overflow-hidden mb-2 z-30"
+              >
+                {writeOptions.map((option, index) => {
+                  const Icon = TAG_ICONS[option.tag]
+                  const color = tagColors[option.tag]
+                  
+                  const menuItem = (
+                    <div
+                      className={cn(
+                        'flex items-center gap-3 px-4 py-3 transition-colors',
+                        option.disabled 
+                          ? 'opacity-50 grayscale cursor-not-allowed' 
+                          : 'hover:bg-gray-50',
+                        index !== writeOptions.length - 1 && 'border-b border-gray-100'
+                      )}
+                    >
+                      {Icon && (
+                        <Icon
+                          className="w-5 h-5"
+                          strokeWidth={1.5}
+                          style={{ color }}
+                        />
+                      )}
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-text-primary text-sm">
+                          {TAG_LABELS[option.tag]}
+                        </h3>
+                        <p className="text-xs text-text-secondary mt-0.5">
+                          {option.description}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                </Link>
-              )
-            })}
-          </div>
-        )}
+                  )
+                  
+                  if (option.disabled) {
+                    return (
+                      <div key={option.tag}>
+                        {menuItem}
+                      </div>
+                    )
+                  }
+                  
+                  return (
+                    <Link
+                      key={option.tag}
+                      href={`/write?tag=${option.tag}`}
+                      onClick={() => setShowWriteMenu(false)}
+                    >
+                      {menuItem}
+                    </Link>
+                  )
+                })}
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
 
         {/* Write Button / X Button */}
         <button
           ref={buttonRef}
-          onClick={() => setShowWriteMenu(!showWriteMenu)}
+          onClick={(e) => {
+            e.stopPropagation()
+            setShowWriteMenu(!showWriteMenu)
+          }}
           className={cn(
-            'w-14 h-14 rounded-full shadow-lg active:scale-95 transition-transform flex items-center justify-center',
+            'w-14 h-14 rounded-full shadow-lg active:scale-95 transition-transform flex items-center justify-center relative z-40',
             showWriteMenu
               ? 'bg-white shadow shadow-lg border border-1 border-neutral-700'
               : 'text-white'

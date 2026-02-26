@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { PostRepository } from '../../infrastructure/repositories/post.repository';
 import { BoardType, PostStatus } from '../../domain/entities/post.entity';
 import { BuildingMembership, MembershipStatus } from '../../../building/domain/entities/building-membership.entity';
+import { PostParticipant } from '../../domain/entities/post-participant.entity';
 
 /**
  * GetPostsUseCase
@@ -20,6 +21,8 @@ export class GetPostsUseCase {
     private readonly postRepository: PostRepository,
     @InjectRepository(BuildingMembership)
     private readonly membershipRepository: Repository<BuildingMembership>,
+    @InjectRepository(PostParticipant)
+    private readonly postParticipantRepository: Repository<PostParticipant>,
   ) {}
 
   async execute(
@@ -59,29 +62,49 @@ export class GetPostsUseCase {
     });
 
     // 3. 응답 데이터 변환
+    const postsWithParticipantCount = await Promise.all(
+      posts.map(async (post) => {
+        let participantCount: number | undefined;
+        
+        // 같이사요 게시글인 경우 참여자 수 계산
+        if (post.boardType === BoardType.TOGATHER) {
+          const participantCountFromDB = await this.postParticipantRepository.count({
+            where: { postId: post.id },
+          });
+          // 글쓴이는 항상 참여자로 간주 (PostParticipant에 없어도)
+          // 따라서 항상 +1을 해줘야 함
+          participantCount = participantCountFromDB + 1;
+        }
+
+        return {
+          id: post.id,
+          title: post.title,
+          content: post.content,
+          boardType: post.boardType,
+          author: {
+            id: post.author?.id,
+            nickname: post.author?.nickname || '익명',
+          },
+          buildingId: post.buildingId,
+          likeCount: post.likeCount,
+          commentCount: post.commentCount,
+          viewCount: post.viewCount,
+          imageUrls: post.images?.map((img) => img.imageUrl) || [],
+          meta: post.meta?.[0] ? {
+            price: post.meta[0].price,
+            quantity: post.meta[0].quantity,
+            deadline: post.meta[0].deadline,
+            locationDetail: post.meta[0].locationDetail,
+            extraData: post.meta[0].extraData,
+          } : null,
+          participantCount: post.boardType === BoardType.TOGATHER ? participantCount : undefined,
+          createdAt: post.createdAt,
+        };
+      })
+    );
+
     return {
-      posts: posts.map((post) => ({
-        id: post.id,
-        title: post.title,
-        content: post.content,
-        boardType: post.boardType,
-        author: {
-          id: post.author?.id,
-          nickname: post.author?.nickname || '익명',
-        },
-        buildingId: post.buildingId,
-        likeCount: post.likeCount,
-        commentCount: post.commentCount,
-        viewCount: post.viewCount,
-        imageUrls: post.images?.map((img) => img.imageUrl) || [],
-        meta: post.meta?.[0] ? {
-          price: post.meta[0].price,
-          quantity: post.meta[0].quantity,
-          deadline: post.meta[0].deadline,
-          locationDetail: post.meta[0].locationDetail,
-        } : null,
-        createdAt: post.createdAt,
-      })),
+      posts: postsWithParticipantCount,
       total,
       page: options.page || 1,
       limit: options.limit || 20,

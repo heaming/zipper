@@ -1,6 +1,7 @@
 'use client'
 
 import { ReactNode } from 'react'
+import { ChevronLeft } from 'lucide-react'
 import { Button } from '@ui/index'
 
 type Props = {
@@ -24,8 +25,9 @@ export function WriteScaffold({
     <div className="flex flex-col min-h-screen bg-background">
       <header className="bg-surface border-b border-border">
         <div className="px-4 py-3 flex items-center justify-between">
-          <button onClick={onBack} className="text-text-secondary">
-            ← 뒤로
+          <button onClick={onBack} className="flex items-center gap-1 text-text-secondary">
+            <ChevronLeft className="w-5 h-5" strokeWidth={1.5} />
+            <span>뒤로</span>
           </button>
           <h1 className="text-lg font-bold text-text-primary">{title}</h1>
           {actionLabel ? (

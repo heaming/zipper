@@ -13,6 +13,7 @@ import {
 import { User } from '../../../auth/domain/entities/user.entity';
 import { Building } from '../../../building/domain/entities/building.entity';
 import { Comment } from './comment.entity';
+import { PostParticipant } from './post-participant.entity';
 import { ChatRoom } from '../../../chat/domain/entities/chat-room.entity';
 import { PostImage } from './post-image.entity';
 import { PostMeta } from './post-meta.entity';
@@ -117,4 +118,7 @@ export class Post {
 
   @OneToMany(() => PostMeta, (meta) => meta.post, { cascade: true })
   meta: PostMeta;
+
+  @OneToMany(() => PostParticipant, (participant) => participant.post)
+  participants: PostParticipant[];
 }

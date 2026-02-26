@@ -14,7 +14,7 @@ export function PostTagBadge({ boardType }: PostTagBadgeProps) {
   const color = tagColors[tag]
 
   return (
-    <div className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[11px] bg-gray-50 mb-2">
+    <div className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[11px] bg-gray-50 mb-2 font-bold">
       {Icon && (
         <Icon 
           className={cn("w-2.5 h-2.5", getTagClass(boardType))} 

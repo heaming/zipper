@@ -7,12 +7,15 @@ import { ViewCountService } from './services/view-count.service';
 import { Post } from './domain/entities/post.entity';
 import { PostImage } from './domain/entities/post-image.entity';
 import { PostMeta } from './domain/entities/post-meta.entity';
+import { PostParticipant } from './domain/entities/post-participant.entity';
 import { PostLike } from './domain/entities/post-like.entity';
 import { Comment } from './domain/entities/comment.entity';
 import { Report } from './domain/entities/report.entity';
 import { BuildingMembership } from '../building/domain/entities/building-membership.entity';
 import { User } from '../auth/domain/entities/user.entity';
 import { Building } from '../building/domain/entities/building.entity';
+import { ChatRoom } from '../chat/domain/entities/chat-room.entity';
+import { ChatRoomMember } from '../chat/domain/entities/chat-room-member.entity';
 import { PostRepository } from './infrastructure/repositories/post.repository';
 import { CreatePostUseCase } from './application/usecases/create-post.usecase';
 import { GetPostsUseCase } from './application/usecases/get-posts.usecase';
@@ -26,12 +29,15 @@ import { ImageStorageFactory } from './infrastructure/storage/image-storage.fact
       Post,
       PostImage,
       PostMeta,
+      PostParticipant,
       PostLike,
       Comment,
       Report,
       BuildingMembership,
       User,
       Building,
+      ChatRoom,
+      ChatRoomMember,
     ]),
   ],
   controllers: [CommunityController],

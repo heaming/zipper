@@ -12,7 +12,7 @@ type Props = {
 
 export function WriteTypeSelect({ onSelect, onClose }: Props) {
   return (
-    <div className="flex flex-col min-h-screen bg-background">
+    <>
       <header className="bg-surface border-b border-border">
         <div className="px-4 py-3 flex items-center justify-between">
           <h1 className="text-xl font-bold text-text-primary">글쓰기</h1>
@@ -48,7 +48,7 @@ export function WriteTypeSelect({ onSelect, onClose }: Props) {
           })}
         </div>
       </main>
-    </div>
+    </>
   )
 }
 

@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation'
 import { Button, Card, CardContent } from '@ui/index'
 import { apiClient } from '@/lib/api-client'
 import { useAuthStore } from '@/stores/auth-store'
+import { ChevronLeft } from 'lucide-react'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -46,8 +47,9 @@ export default function LoginPage() {
       {/* Header */}
       <header className="bg-surface border-b border-border">
         <div className="flex items-center h-14 px-4">
-          <Link href="/" className="text-text-primary">
-            ← 뒤로
+          <Link href="/" className="flex items-center gap-1 text-text-primary">
+            <ChevronLeft className="w-5 h-5" strokeWidth={1.5} />
+            <span>뒤로</span>
           </Link>
         </div>
       </header>

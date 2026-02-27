@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { Home, Users, MessageCircle, User } from 'lucide-react'
 import { Toaster } from '@/ui/sonner'
 import { AnimatePresence } from 'framer-motion'
+import { Providers } from './providers'
 import '../styles/globals.scss'
 
 // 하단 네비게이션을 숨길 경로들
@@ -26,6 +27,11 @@ function BottomNav() {
   
   // 내 활동 내역 페이지에서는 네비게이션 숨김
   if (pathname === '/profile/activity') {
+    return null
+  }
+
+  // 채팅방 상세에서는 네비게이션 숨김
+  if (pathname?.match(/^\/chat\/\d+/)) {
     return null
   }
 
@@ -78,12 +84,14 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <body>
-        <div className="page-container">
-          <AnimatePresence initial={false}>
-            {children}
-          </AnimatePresence>
-          <BottomNav />
-        </div>
+        <Providers>
+          <div className="page-container">
+            <AnimatePresence initial={false}>
+              {children}
+            </AnimatePresence>
+            <BottomNav />
+          </div>
+        </Providers>
         <Toaster />
       </body>
     </html>
